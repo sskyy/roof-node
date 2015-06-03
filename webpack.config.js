@@ -1,37 +1,20 @@
 var webpack = require('webpack');
 
 module.exports = {
-  devtool: 'eval',
   entry: {
-    //simpleText:[
-    //  'webpack-dev-server/client?http://localhost:9000',
-    //  'webpack/hot/dev-server',
-    //  './demo/simpleText/index.js'
-    //],
-    todo:[
-      'webpack-dev-server/client?http://localhost:9000',
-      'webpack/hot/dev-server',
-      './demo/todo/index.js'
-    ]
+    node : "./src/node.js",
+    nodes : "./src/nodes.js",
   },
   output: {
-    path: __dirname + '/public/',
+    path: __dirname + '/dist/',
     filename: '[name].js',
-    publicPath: '/demo/public/'
   },
   externals : [{
   }],
   plugins: [
-    new webpack.HotModuleReplacementPlugin(),
     new webpack.NoErrorsPlugin(),
     new webpack.SourceMapDevToolPlugin({})
   ],
-  resolve: {
-    extensions: ['', '.js'],
-    alias : {
-      //"jQuery" : __dirname+"/src/vendor/jquery.min"
-    }
-  },
   module: {
     loaders: [
       { test: /\.css/,loader: "style-loader!css-loader"},
