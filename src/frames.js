@@ -52,8 +52,8 @@ Frames.prototype.commit = function( commitName ){
   this.historyValues.push( _.cloneDeep( this.data ) )
   this.historyNames.push( commitName )
   if( this.historyNames.length > this.options.frames ){
-    this.historyNames.unshift()
-    this.historyValues.unshift()
+    this.historyNames.shift()
+    this.historyValues.shift()
   }
   return true
 }
