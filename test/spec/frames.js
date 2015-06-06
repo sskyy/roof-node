@@ -29,8 +29,13 @@ describe("initialize with options", function(){
     assert.equal(frames.get("country"), "uk")
 
     frames.set({"features": {lobby: "soccer", education: "doctor"}})
+    // deep clone
+    assert.notEqual(frames.get("features"), {lobby: "soccer", education: "doctor"})
     assert.equal(frames.get("features.lobby"), "soccer")
     assert.equal(frames.get("features.education"), "doctor")
+
+    frames.set("features.lobby", "football")
+    assert.equal(frames.get("features.lobby"), "football")
   })
 
   it("frame has limit", function() {
