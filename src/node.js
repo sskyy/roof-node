@@ -6,21 +6,21 @@ var util = require("./util")
 
 //global values
 var NodeActionTense = {
-  'push':['unpushed','pushing','pushed'],
-  'pull':['unpulled','pulling','pulled'],
-  'verify':['unverified','verifying','verified'],
-  'set':['unset','setting','set'],
-  'commit':['uncommitted','committing','committed'],
-  'rollback':['unrollbacked','rollbacking','rollbacked'],
-  'replace' : ['unreplaced','replacing','replaced']
+  'push': ['unpushed','pushing','pushed'],
+  'pull': ['unpulled','pulling','pulled'],
+  'verify': ['unverified','verifying','verified'],
+  'set': ['unset','setting','set'],
+  'commit': ['uncommitted','committing','committed'],
+  'rollback': ['unrollbacked','rollbacking','rollbacked'],
+  'replace': ['unreplaced','replacing','replaced']
 }
 
 var NodeActions = Object.keys(NodeActionTense)
 
 var Node = {
   createClass : function( def, options ){
-    var newNodeClass = function( data, options){
-      var ins = new NodeInstance(newNodeClass.def, _.defaults( options || {}, newNodeClass.options) )
+    var newNodeClass = function( data, options ){
+      var ins = new NodeInstance( newNodeClass.def, _.defaults( options || {}, newNodeClass.options) )
       if( data ) ins.fill( data )
       return ins
     }
@@ -31,26 +31,25 @@ var Node = {
     }
     return newNodeClass
   },
-  isNodeInstance :function ( obj ){
+  isNodeInstance : function ( obj ){
     return obj instanceof NodeInstance
   }
 }
 
 function NodeInstance( def, options ){
   var that = this
-  this.options = options ||{}
+  this.options = options || {}
   this.def = def
   this.updated = false
   this.states = {}
-  this.data = new Frames({limit:options.frames||5})
-
+  this.data = new Frames( {frameLimit : options.frameLimit} )
 
   that.states = new States({
-    tenses:NodeActionTense,
+    tenses : NodeActionTense,
     naive : {
       "valid" : ["valid","invalid"],
       "clean" : ["clean","dirty"] //whether data is changed since last update from server
-    },
+    }
   })
 
   if( that.options.combine ){
@@ -108,7 +107,7 @@ NodeInstance.prototype.commit =function( commitName ){
   return result
 }
 
-NodeInstance.prototype.rollback=function( commitName ){
+NodeInstance.prototype.rollback = function( commitName ){
   var result = this.data.rollback(commitName)
   if( result ){
     this.states.reset("set")
@@ -134,12 +133,9 @@ NodeInstance.prototype.clone = function(){
   //TODO
 }
 
-
-
 NodeInstance.prototype.is =function(){
   return this.states.is.apply(this.states, Array.prototype.slice.call(arguments))
 }
-
 
 NodeInstance.prototype.pull = NodeInstance.prototype.push = function rawUpdate( promise ){
   //this function will be called after user's handler
@@ -169,14 +165,13 @@ NodeInstance.prototype.verify = function( promise ) {
 
 
 //this is important
-NodeActions.forEach(function( action){
-  util.decorateWithMiddleware( NodeInstance.prototype, action)
-  util.decorateWithState( NodeInstance.prototype, action)
+NodeActions.forEach(function( action ){
+  util.decorateWithMiddleware( NodeInstance.prototype, action )
+  util.decorateWithState( NodeInstance.prototype, action )
 })
 
 
 NodeInstance.prototype.combine = function( actionsToCombine ){
-  //console.log("--")
   if( this.combinedActions ){
     return console.warn("This instance already combined actions:", this.combine)
   }

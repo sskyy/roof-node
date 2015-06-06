@@ -108,7 +108,7 @@ describe("async state test", function(){
     assert.equal( disel.is("unpushed"), true )
     disel.commit()
     assert.equal( disel.is("committed"), true )
-    disel.push().then(function(){
+    disel.push().then(function(done){
       assert.notEqual( disel.get("id"), undefined )
       assert.equal( disel.is("pushed"), true )
       assert.equal( disel.is("clean"), true )
@@ -118,6 +118,7 @@ describe("async state test", function(){
       assert.equal( disel.is("verified"), false)
       done()
     })
+    done()
 
     assert.equal( disel.is("pushing"), true )
   })
@@ -139,14 +140,15 @@ describe("combine action test", function(){
   var rome = new User
   rome.combine(['push','commit'])
 
-  it("auto commit after push", function( done){
+  it("auto commit after push", function( done ){
     rome.set("name","rome")
     assert.equal( rome.is("unpushed","uncommitted"), true)
-    rome.push().then(function(){
+    rome.push().then(function(done){
       assert.equal( rome.is("pushed","committed"), true)
       assert.notEqual( rome.get("id"), undefined)
       done()
     })
+    done()
   })
 })
 

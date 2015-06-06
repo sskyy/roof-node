@@ -4,7 +4,7 @@ function Frames(options){
   var that = this
 
   this.options = _.defaults(options || {}, {
-    frames : 5
+    frameLimit : 5
   })
   this.data = {}
   this.historyNames = []
