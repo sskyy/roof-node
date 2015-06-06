@@ -13,23 +13,23 @@ function States( def ){
   that.def = def
   that.actions = that.def.tenses ? Object.keys(that.def.tenses) : []
 
-  that.actionTenseMap = _.transform( that.def.tenses, function( result,v,k ){
-    v.forEach(function( state,i ){
+  that.actionTenseMap = _.transform( that.def.tenses, function( result, v, k ){
+    v.forEach(function( state, i ){
       result[state] = [k, ActionStates[i]]
     })
   })
 
-  that.naiveStateMap = _.transform( that.def.naive, function( result,v,k ){
+  that.naiveStateMap = _.transform( that.def.naive, function( result, v, k ){
     v.forEach(function( state ){
       result[state] = k
     })
   })
 
   that.states = _.merge(
-    _.mapValues( that.def.tenses, function(){
-    return ActionStates[0]
-  }),
-    _.mapValues( that.def.naive, function(){
+    _.mapValues(that.def.tenses, function(){
+      return ActionStates[0]
+    }),
+    _.mapValues(that.def.naive, function(){
       return null
     })
   )

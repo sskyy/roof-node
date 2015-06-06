@@ -13,7 +13,8 @@ var NodeActionTense = {
 }
 
 var NaiveStates = {
-  "valid" : ["valid","invalid"]
+  "valid" : ["valid","invalid"],
+  "clean" : ["clean","dirty"]
 }
 
 
@@ -31,9 +32,22 @@ describe("state test", function(){
     states.start("push")
     assert.equal( states.is("pushing"), true )
     assert.equal( states.is("pushed"), false )
+    
     states.end("push")
     assert.equal( states.is("pushed"), true )
     assert.equal( states.is("pushing"), false )
+    
+    assert.throws(
+      function() {
+        states.reset("fetch")
+      },
+      function(e) {
+        return e.message === "there is no state for action fetch"
+      }
+    );
+    
+    states.reset("pull");
+    assert(states.is("unpulled"))
   })
 
   it("basic naive state test", function(){
@@ -41,6 +55,30 @@ describe("state test", function(){
     assert.equal( states.is("valid"), true )
     states.deactivate("valid")
     assert.equal( states.is("invalid"), true )
+    
+    states.activate("clean")
+    assert.equal( states.is("clean"), true )
+    states.deactivate("clean")
+    assert.equal( states.is("dirty"), true )
+    
+    assert.throws(
+      function() {
+        states.activate("fetch")
+      },
+      function(e) {
+        return e.message === "there is no naive state fetch"
+      }
+    );
+    
+    assert.throws(
+      function() {
+        states.deactivate("fetch")
+      },
+      function(e) {
+        return e.message === "there is no naive state fetch"
+      }
+    );
+
   })
 
   it("combined state test", function(){
