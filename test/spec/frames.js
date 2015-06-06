@@ -21,4 +21,7 @@ describe("initialize with options", function(){
   it("get and set test", function(){
     assert.equal(frames.get("name"), "lily")
   })
+  frames.commit()
+  frames.commit()
+  assert.equal(frames.historyNames.length, 1)
 })

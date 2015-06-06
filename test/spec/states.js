@@ -38,6 +38,18 @@ describe("state test", function(){
     assert(states.is("valid"))
     states.set("valid", "invalid")
     assert(states.is("invalid"))
+
+    states.set("push", "started")
+    assert(!states.is("clean"))
+    assert(states.is("dirty"))
+    assert(states.is("invalid"))
+    assert(!states.is("valid"))
+
+    states.set("push", "ended")
+    assert(!states.is("clean"))
+    assert(states.is("dirty"))
+    assert(states.is("invalid"))
+    assert(!states.is("valid"))
   })
 
   it("basic action test",function(){
