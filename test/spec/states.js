@@ -23,9 +23,21 @@ describe("state test", function(){
 
   beforeEach(function(){
     states = new States({
-      tenses:NodeActionTense,
+      tenses : NodeActionTense,
       naive : NaiveStates
     })
+  })
+
+  it("basic set test", function(){
+    states.set("clean", "clean")
+    assert(states.is("clean"))
+    states.set("clean", "dirty")
+    assert(states.is("dirty"))
+
+    states.set("valid", "valid")
+    assert(states.is("valid"))
+    states.set("valid", "invalid")
+    assert(states.is("invalid"))
   })
 
   it("basic action test",function(){

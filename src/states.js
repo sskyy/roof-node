@@ -85,7 +85,7 @@ States.prototype.deactivate = function( state ) {
 States.prototype.is = function( state ){
   var argv = Array.prototype.slice.call(arguments)
   var that = this
-  return argv.every(function( state ){
+  return _.every(argv, function( state ){
     if( !_.isArray(state) ) state = [state]
 
     return _.any(state, function( s ){
