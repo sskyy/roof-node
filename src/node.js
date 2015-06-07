@@ -73,7 +73,7 @@ NodeInstance.prototype.off = function(){
   this.states.removeListener.apply( this.states, Array.prototype.slice.call(arguments) )
 }
 
-NodeInstance.prototype.set =function( path, value){
+NodeInstance.prototype.set = function( path, value ){
   /*
     TODO
     对所有verified过的数据打一个快照
@@ -88,7 +88,6 @@ NodeInstance.prototype.set =function( path, value){
     path = path[0]
   }
   this.states.deactivate("clean")
-  console.log("setting", path, value)
   return this.data.set(path, value)
 }
 
@@ -100,7 +99,7 @@ NodeInstance.prototype.commit =function( commitName ){
   if( commitName instanceof CombinedArgv ){
     commitName = undefined
   }
-  var result = this.data.commit( commitName)
+  var result = this.data.commit(commitName)
   if( result ){
     this.states.reset("set")
   }
@@ -121,7 +120,7 @@ NodeInstance.prototype.get = function(path){
 
 NodeInstance.prototype.getRef = function(path){
   if( _.isArray(path) ) path = path.join(".")
-  return this.data.getRef( path)
+  return this.data.getRef(path)
 }
 
 NodeInstance.prototype.toObject = function(path){
@@ -133,7 +132,7 @@ NodeInstance.prototype.clone = function(){
   //TODO
 }
 
-NodeInstance.prototype.is =function(){
+NodeInstance.prototype.is = function(){
   return this.states.is.apply(this.states, Array.prototype.slice.call(arguments))
 }
 
@@ -142,7 +141,7 @@ NodeInstance.prototype.pull = NodeInstance.prototype.push = function rawUpdate( 
   var that = this
   return Promise.resolve(promise).then(function(){
     that.states.activate("clean")
-    that.states.reset("valid")
+    that.states.activate("valid")
     that.states.reset("verify")
     that.states.reset("pull")
     that.states.reset("push")
@@ -163,7 +162,6 @@ NodeInstance.prototype.verify = function( promise ) {
 }
 
 
-
 //this is important
 NodeActions.forEach(function( action ){
   util.decorateWithMiddleware( NodeInstance.prototype, action )
@@ -173,7 +171,7 @@ NodeActions.forEach(function( action ){
 
 NodeInstance.prototype.combine = function( actionsToCombine ){
   if( this.combinedActions ){
-    return console.warn("This instance already combined actions:", this.combine)
+    return console.warn("This instance already combined actions : ", this.combine)
   }
   var mainAction = actionsToCombine[0]
   var that = this
