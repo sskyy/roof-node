@@ -1,10 +1,11 @@
 var _ = require("lodash")
-
+var Node = require("../lib/node.js")
+var Nodes = require("../lib/nodes.js")
 
 function getRef( obj, name ){
   var ns = !_.isArray(name) ? name.split('.') : name,
-    ref = obj,
-    currentName
+      ref = obj,
+      currentName
 
   while( currentName = ns.shift() ){
     if(_.isObject(ref) && ref[currentName]){
@@ -53,16 +54,22 @@ function Mixin( data, def ){
     updater = updateComponentFromDataChange.bind(that,randomKey)
 
     _.forEach( this[def.attach], function( obj ){
-      if( _.isFunction(obj.on) ){
+      if(  Node.isNodeInstance(obj)  ||  Nodes.isNodesInstance(obj) ){
         obj.on("change",updater)
+        if( Nodes.isNodesInstance( obj )){
+          obj.onAny( "change", updater)
+        }
       }
     })
   }
 
   mixinInstance.componentWillUnmount = function(){
     _.forEach( this[def.attach], function( obj ){
-      if( _.isFunction(obj.on) ){
+      if(  Node.isNodeInstance(obj)  ||  Nodes.isNodesInstance(obj) ){
         obj.off("change",updater)
+        if( Nodes.isNodesInstance( obj )){
+          obj.offAny( "change", updater)
+        }
       }
     })
   }

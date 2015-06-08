@@ -57,6 +57,9 @@ var Nodes = {
     }
 
     return newClass
+  },
+  isNodesInstance :function ( obj ){
+    return obj instanceof NodesInstance
   }
 }
 
@@ -194,7 +197,7 @@ NodesInstance.prototype.rollback= function(name) {
 
 
 NodesInstance.prototype.find=NodesInstance.prototype.filter =  function() {
-  var filteredNodes = this.data.filter.apply(this.data, arguments)
+  var filteredNodes = this.data.filter.apply(dthis.data, arguments)
   var newNodesInstance = this.clone( false )
   newNodesInstance.fill( filteredNodes )
   return newNodesInstance
@@ -269,6 +272,16 @@ NodesInstance.prototype.onAny = function( event, handler ){
   })
 }
 
+NodesInstance.prototype.offAny = function( event, handler ){
+
+  _.remove( this.nodeListeners[event], function( inArrayHandler){
+    return inArrayHandler === handler
+  })
+
+  this.data.forEach( function(node){
+    node.off( event, handler )
+  })
+}
 
 //this is important
 NodesActions.forEach(function( action){
