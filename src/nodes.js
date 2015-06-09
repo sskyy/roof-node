@@ -128,7 +128,7 @@ NodesInstance.prototype.insert = function( data, index ) {
   }
   this.data = this.data.slice(0, index ).concat( data, this.data.slice(index)  )
 
-  _.forEach(this.nodeListeners, function( event, listeners){
+  _.forEach(this.nodeListeners, function(  listeners, event){
     listeners.forEach(function(listener){
       data.on(event, listener)
     })
@@ -149,7 +149,7 @@ NodesInstance.prototype.remove= function(where) {
   this.data.forEach(function( node, index ){
     if( util.objectMatch( node.toObject(), where) ){
       //remove listener first
-      _.forEach(that.nodeListeners, function( event, listeners){
+      _.forEach(that.nodeListeners, function( listeners, event ){
         listeners.forEach(function(listener){
           that.data[index].off(event, listener)
         })
@@ -165,7 +165,7 @@ NodesInstance.prototype.empty = function(){
   var that = this
   this.data.forEach(function( node, index ){
       //remove listener first
-    _.forEach(that.nodeListeners, function( event, listeners){
+    _.forEach(that.nodeListeners, function(listeners, event){
       listeners.forEach(function(listener){
         that.data[index].off(event, listener)
       })
