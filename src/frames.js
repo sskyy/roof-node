@@ -79,7 +79,7 @@ function getRef( obj, name ){
     currentName
 
   while( currentName = ns.shift() ){
-    if(_.isObject(ref) && ref[currentName]){
+    if(_.isObject(ref) && ref[currentName]!==undefined){
       ref = ref[currentName]
     }else{
       ref = undefined
