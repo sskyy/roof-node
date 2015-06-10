@@ -25,18 +25,23 @@ var Node = {
       return _.isFunction( v )
     })
 
+    //api与Node方法重名检测
+    var conflictedApis =  _.intersection( Object.keys(apis), Object.keys( classPrototype))
+    if(conflictedApis.length !==0){
+      throw new Error("Api conflict with Roof Node prototype methods:" + conflictedApis.join(","))
+    }
 
     //动态创建class
     var newNodeClass = function( data, options ){
       options = _.extend({}, classOptions, options )
-      classConstructor.call(this, classDef, options, data, apis)
+      classConstructor.call(this, classDef, options, data)
 
       //兼容旧api
       this.isNodeInstance = true
     }
 
     //绑定prototype
-    newNodeClass.prototype =_.clone(classPrototype)
+    newNodeClass.prototype = _.extend(_.clone(classPrototype), apis)
     newNodeClass.isNodeClass = true
 
     //TODO 搞定combine
@@ -58,7 +63,7 @@ var Node = {
  * class prototype
  */
 
-function classConstructor( def, options, data, apis ){
+function classConstructor( def, options, data ){
   var that = this
   this.options = options
   this.def = def
@@ -85,11 +90,6 @@ function classConstructor( def, options, data, apis ){
     }
     that.middlewareActions = util.loadMiddlewareActions(that.options.middleware)
   }
-
-  //设置api
-  this.api = _.mapValues(apis,  ( func)=>{
-    return func.bind(this)
-  })
 
   if( data ) this.fill( data )
 }

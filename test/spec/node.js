@@ -210,9 +210,27 @@ describe("class api test", function(){
 
   var ian = new User({name:"ian",familyName:"William"})
   it("api should work", function(){
-    assert.equal( ian.api.getFullName(), "Williamian")
-    ian.api.setName("jhon")
-    assert.equal( ian.api.getFullName(), "Williamjhon")
+    assert.equal( ian.getFullName(), "Williamian")
+    ian.setName("jhon")
+    assert.equal( ian.getFullName(), "Williamjhon")
+  })
+
+  it("api conflict should fail", function(){
+    var error = false
+    try{
+      Node.createClass({
+        set : function( name ){
+          this.set("name", name)
+        },
+        get : function(){
+          return this.get("familyName") + this.get("name")
+        }
+      })
+    }catch(e){
+      console.log( e)
+      error = true
+    }
+    assert.equal(error, true)
   })
 
 })

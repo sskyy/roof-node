@@ -114,12 +114,26 @@ describe("events test", function(){
       users.insert({"name":"jhon", age:21})
       users.insert({"name":"maya", age:32})
 
-      assert.equal( users.api.getTotalAge(), 53)
-      users.api.setAllName("jesper")
+      assert.equal( users.getTotalAge(), 53)
+      users.setAllName("jesper")
 
-      assert.equal( users.api.getTotalAge(), 53)
+      assert.equal( users.getTotalAge(), 53)
       assert.equal( users.get(0).get("name"), "jesper")
-      //console.log( users.get(1).get("name"))
+    })
+
+    it("api conflict should fail", function(){
+      var error =false
+      try{
+        Node.createClass({
+          set : function(){},
+          get : function(){},
+          commit : function(){}
+        })
+      }catch(e){
+        console.log(e)
+        error = true
+      }
+      assert.equal( error, true)
     })
   })
   //

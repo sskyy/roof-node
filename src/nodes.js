@@ -36,6 +36,13 @@ var Nodes = {
     var apis = _.pick(classDef, function( v ){
       return _.isFunction( v )
     })
+
+    //api与Node方法重名检测
+    var conflictedApis =  _.intersection( Object.keys(apis), Object.keys( classPrototype))
+    if(conflictedApis.length !==0){
+      throw new Error("Api conflict with Roof Node prototype methods:" + conflictedApis.join(","))
+    }
+
     //创建class
     var newClass = function( data,options ){
       options = _.extend({}, classOptions, options)
@@ -43,7 +50,7 @@ var Nodes = {
       this.isNodesInstance = true
     }
 
-    newClass.prototype = _.extend({}, classPrototype)
+    newClass.prototype = _.extend({}, classPrototype,  apis)
 
     if( classOptions.facade ){
       _.forEach(classOptions.facade, function( fn, name ){
@@ -123,9 +130,6 @@ function classConstructor( def, data, options, apis ){
     that.middlewareActions = util.loadMiddlewareActions(that.options.middleware)
   }
 
-  this.api = _.mapValues(apis, (func)=>{
-    return func.bind(this)
-  })
 
   if( data ){
     this.fill( data )
