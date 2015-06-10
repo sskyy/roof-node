@@ -207,6 +207,7 @@ classPrototype.empty = function(){
     that.data[index] = false
   })
   that.data = []
+  return this
 }
 
 classPrototype.pull= function() {}
