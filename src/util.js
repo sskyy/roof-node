@@ -36,10 +36,12 @@ function decorateWithState (prototype, action){
     //cause the callback invoke in next tick.
     var res = rawAction.apply( that, argv )
     if( res && _.isFunction(res.then) ){
-      return res.then(function(){
+      return res.then(function(data){
         that.states.end(action)
-      },function(){
+        return data
+      },function(err){
         that.states.end(action)
+        throw err
       })
     }else{
       that.states.end(action)
@@ -55,21 +57,20 @@ function decorateWithMiddleware( prototype, action ){
 
 
     if( that.middlewareActions && that.middlewareActions[action] ){
-
-      return promiseSeries(["before","fn","after"],function( fnName){
-        if( !that.middlewareActions[action][fnName].length ) return true
+      var fnResult
+      return promiseSeries(["before","fn","after"],function( fnName, lastRes){
+        if( !that.middlewareActions[action][fnName].length ) { return lastRes }
         var fns = that.middlewareActions[action][fnName]
-
         //important
         if( fnName === "fn" ) fns.push( rawAction )
-
-        var lastResult
-        return promiseSeries( fns, function( fn ){
-          lastResult = fn.apply( that, [lastResult].concat(argv) )
-          //console.log("applied", _.isFunction(fn), fn.toString(), lastResult)
-
-          return lastResult
-        })
+        return promiseSeries( fns, function(fn, res){
+          return fn.apply( that, [res].concat(argv) )
+        }).then(function(_fnResult) {
+          if(fnName === "fn") fnResult = _fnResult
+        }, lastRes)
+      }).then(function() {
+        //返回fn的resolve值
+        return fnResult
       })
     }else{
       //console.log("no middleware loaded for action", action)
@@ -78,47 +79,16 @@ function decorateWithMiddleware( prototype, action ){
   }
 }
 
-//TODO 去掉bluebird
-function promiseSeries( fns, iterator ){
-  var defers = fns.map(function(){
-    var resolve, reject;
-    var promise = new Promise(function() {
-      resolve = arguments[0];
-      reject = arguments[1];
-    });
-    return {
-      resolve: resolve,
-      reject: reject,
-      promise: promise
-    };
-  })
-  var promises = defers.map(function(d){
-    return d.promise
-  })
-  var i = 0
-  var res = new Promise((resolve, reject)=>{
 
-    bPromise.each(promises, function(){
-
-      var res = iterator( fns[i] )
-      if( res instanceof Promise){
-        res.then(function(){
-          ++i
-          defers[i]&&defers[i].resolve()
-        },function(res){
-          throw res
-        })
-      }else{
-        ++i
-        defers[i]&&defers[i].resolve()
-      }
-    }).then(resolve,reject)
-
+function promiseSeries(fns, iterator) {
+  var _promise = Promise.resolve(true)
+  fns.forEach(function(fn) {
+    _promise = _promise.then(function (data) {
+      return iterator(fn, data)
+    })
   })
-  defers[0].resolve()
-  return res
+  return _promise
 }
-
 
 function objectMatch( obj, where){
   for( var i in where ){

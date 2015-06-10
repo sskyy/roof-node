@@ -28,6 +28,11 @@ describe("initialize with options", function(){
     assert.equal(frames.get("age"), 27)
     assert.equal(frames.get("country"), "uk")
 
+    //test with negative value
+    frames.set({age:0})
+    assert.equal(frames.get("age"), 0)
+
+
     frames.set({"features": {lobby: "soccer", education: "doctor"}})
     // deep clone
     assert.notEqual(frames.get("features"), {lobby: "soccer", education: "doctor"})
@@ -43,6 +48,8 @@ describe("initialize with options", function(){
     frames.commit()
     assert.equal(frames.length, 1)
   })
+
+
 
   
 

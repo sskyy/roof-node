@@ -174,15 +174,17 @@ classPrototype.is = function(){
 classPrototype.pull = classPrototype.push = function rawUpdate( promise ){
   //this function will be called after user's handler
   var that = this
-  return Promise.resolve(promise).then(function(){
+  return Promise.resolve(promise).then(function(data){
     that.states.activate("clean")
     that.states.activate("valid")
     that.states.reset("verify")
     that.states.reset("pull")
     that.states.reset("push")
-  }, function(){
+    return data
+  }, function(err){
     that.states.deactivate("clean")
     that.states.deactivate("valid")
+    throw err
   })
 }
 
@@ -213,7 +215,6 @@ classPrototype.combine = function( actionsToCombine ){
   that[mainAction] = function(){
     var argv = Array.prototype.slice.call(arguments)
     return util.promiseSeries( actionsToCombine, function(action){
-      console.log("calling combined action", action)
       return classPrototype[action].call( that, new CombinedArgv( _.clone(actionsToCombine), _.cloneDeep(argv)) )
     })
   }

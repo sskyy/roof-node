@@ -1,5 +1,3 @@
-var Promise = require("bluebird")
-
 module.exports = {
   push : {
     fn : function fakePush(){

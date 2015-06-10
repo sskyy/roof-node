@@ -2,10 +2,12 @@ var assert = require("assert")
 var _ = require("lodash")
 var Node = require("../../src/node")
 var defaultMiddleWare = require("../middleware/default/node")
+var failMiddleWare = require("../middleware/default/fail.js")
 var async = require("async")
 
 var userDef = {}
 var User = Node.createClass( userDef, {middleware:defaultMiddleWare} )
+var UserFail = Node.createClass( userDef, {middleware:failMiddleWare})
 
 
 describe("initial states test",function(){
@@ -108,20 +110,51 @@ describe("async state test", function(){
     assert.equal( disel.is("unpushed"), true )
     disel.commit()
     assert.equal( disel.is("committed"), true )
-    disel.push().then(function(done){
+    disel.push().then(function(data){
       assert.notEqual( disel.get("id"), undefined )
       assert.equal( disel.is("pushed"), true )
       assert.equal( disel.is("clean"), true )
-      assert.equal( disel.is("valid"), false)
+      assert.equal( disel.is("valid"), true)
       assert.equal( disel.is("invalid"), false)
       assert.equal( disel.is("pulled"), false)
       assert.equal( disel.is("verified"), false)
+
+
+
       done()
+    }).catch(function(err){
+      console.log( err )
+      done(err)
     })
-    done()
 
     assert.equal( disel.is("pushing"), true )
   })
+})
+
+describe("push and pull", function(){
+  it( "get resolve data", function(done){
+    var disel = new User({name:"disel"})
+    disel.push().then(function(data){
+      //resolve得到的数据
+      assert.equal( data.id, disel.get("id"))
+      assert.equal( data.name, disel.get("name"))
+      done()
+    })
+  })
+
+  it("push should fail", function(done){
+    var disel = new UserFail({name:"disel"})
+    disel.push().then(function(){
+      //resolve得到的数据
+      done("should not be called")
+    }).catch(function(err){
+      assert.equal( disel.get("id"), undefined )
+      assert.notEqual( disel.get("name"), undefined )
+      assert.notEqual( err, undefined )
+      done()
+    })
+  })
+
 })
 
 describe("combine action test", function(){
@@ -140,15 +173,13 @@ describe("combine action test", function(){
   var rome = new User
   rome.combine(['push','commit'])
 
-  it("auto commit after push", function( done ){
-    rome.set("name","rome")
+  it("auto commit after push", function(done){
     assert.equal( rome.is("unpushed","uncommitted"), true)
-    rome.push().then(function(done){
+    rome.push().then(function(data){
       assert.equal( rome.is("pushed","committed"), true)
       assert.notEqual( rome.get("id"), undefined)
       done()
     })
-    done()
   })
 })
 
