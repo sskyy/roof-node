@@ -75,6 +75,53 @@ describe("events test", function(){
 
     users.push()
   })
+
+  describe("prototype test", function(){
+    it("instance of should work", function(){
+      var users = new UserNodes
+      var UserNodes2 = Nodes.createClass(User)
+      var users2 = new UserNodes2
+      assert.equal( users instanceof  UserNodes, true)
+      assert.equal( users2 instanceof  UserNodes2, true)
+      assert.equal( users instanceof  UserNodes2, false)
+      assert.equal( users2 instanceof  UserNodes, false)
+    })
+    it("old api should work too", function(){
+      var users = new UserNodes
+      assert.equal( Nodes.isNodesInstance(users) ,true)
+      assert.equal( Nodes.isNodesClass(UserNodes) ,true)
+    })
+  })
+
+  describe("nodes api test", function(){
+    it("api should work", function(){
+      var UserList = Nodes.createClass({
+        setAllName : function(name){
+          return this.forEach(function(node){
+            node.set("name", name)
+          })
+        },
+        getTotalAge : function( ){
+          var total = 0
+          this.forEach(function( node){
+            total += node.get("age")
+          })
+          return total
+        }
+      })
+
+      var users = new UserList
+      users.insert({"name":"jhon", age:21})
+      users.insert({"name":"maya", age:32})
+
+      assert.equal( users.api.getTotalAge(), 53)
+      users.api.setAllName("jesper")
+
+      assert.equal( users.api.getTotalAge(), 53)
+      assert.equal( users.get(0).get("name"), "jesper")
+      //console.log( users.get(1).get("name"))
+    })
+  })
   //
   //it("sub object event should propagate", function(done){
   //  var users = new UserNodes

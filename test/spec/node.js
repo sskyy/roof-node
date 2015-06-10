@@ -181,6 +181,42 @@ describe("state event test", function(){
 
 })
 
+describe("prototype test", function(){
+  var maya = new User
+  var User2 = Node.createClass({})
+  var jesper = new User2
+  it("instanceof should work", function(){
+    assert.equal( maya instanceof  User, true)
+    assert.equal( jesper instanceof  User2, true)
+    assert.equal( jesper instanceof  User, false)
+  })
+
+  it("work with old api", function(){
+    assert.equal(Node.isNodeInstance(maya), true)
+    assert.equal(Node.isNodeInstance(jesper), true)
+    assert.equal(Node.isNodeClass(User), true)
+  })
+})
+
+describe("class api test", function(){
+  var User = Node.createClass({
+    setName : function( name ){
+      this.set("name", name)
+    },
+    getFullName : function(){
+      return this.get("familyName") + this.get("name")
+    }
+  })
+
+  var ian = new User({name:"ian",familyName:"William"})
+  it("api should work", function(){
+    assert.equal( ian.api.getFullName(), "Williamian")
+    ian.api.setName("jhon")
+    assert.equal( ian.api.getFullName(), "Williamjhon")
+  })
+
+})
+
 describe("push wrong data should change local object state to error",function(){
 
 })

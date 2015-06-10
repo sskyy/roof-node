@@ -2,7 +2,7 @@
 var _ = require("lodash")
 var States = require("./states")
 var util = require("./util")
-
+var Node = require("./node.js")
 
 //global values
 var NodesActionTense = {
@@ -24,19 +24,29 @@ var NodesActionTense = {
 var NodesActions = Object.keys(NodesActionTense)
 
 var Nodes = {
-  createClass:function( factory, options ){
-    var newClass = function( data,options ){
-      var nodes = new NodesInstance(newClass.factory, _.defaults(options || {}, newClass.options))
-      if(data){
-        nodes.fill(data)
+  createClass:function( classDef, classOptions ){
+    classDef = classDef || {}
+    classOptions = classOptions || {}
+    if(Node.isNodeClass(classDef)){
+      classDef = {
+        $factory : classDef
       }
-      return nodes
     }
 
-    newClass.factory = factory
-    newClass.options = options || {}
-    if( newClass.options.facade ){
-      _.forEach(newClass.options.facade, function( fn, name ){
+    var apis = _.pick(classDef, function( v ){
+      return _.isFunction( v )
+    })
+    //创建class
+    var newClass = function( data,options ){
+      options = _.extend({}, classOptions, options)
+      classConstructor.call( this, classDef, data, options, apis)
+      this.isNodesInstance = true
+    }
+
+    newClass.prototype = _.extend({}, classPrototype)
+
+    if( classOptions.facade ){
+      _.forEach(classOptions.facade, function( fn, name ){
         newClass[name] = fn.bind(newClass)
       })
     }
@@ -52,23 +62,32 @@ var Nodes = {
       console.warn("you should use your own facade method")
     }
 
-    newClass.combine = function( combine ){
-      newClass.options.combine = combine
-    }
+    //TODO 这里的combine是动态combine，其实可以在创建时的options指定。
+    //newClass.combine = function( combine ){
+    //  newClass.options.combine = combine
+    //}
 
+    newClass.isNodesClass = true
     return newClass
   },
   isNodesInstance :function ( obj ){
-    return obj instanceof NodesInstance
+    return obj && obj.isNodesInstance ===true
+  },
+  isNodesClass :function( func){
+    return func && func.isNodesClass ===true
   }
+
 }
 
+/*
+  * class
+ */
 
-
-function NodesInstance( factory, options ){
+function classConstructor( def, data, options, apis ){
   var that = this
+  this.def = def
   this.options = options ||{}
-  this.factory = factory
+  this.factory = def.$factory || Node.createClass()
   this.updated = false
   this.states = {}
   this.data = []
@@ -103,9 +122,19 @@ function NodesInstance( factory, options ){
     }
     that.middlewareActions = util.loadMiddlewareActions(that.options.middleware)
   }
+
+  this.api = _.mapValues(apis, (func)=>{
+    return func.bind(this)
+  })
+
+  if( data ){
+    this.fill( data )
+  }
 }
 
-NodesInstance.prototype.fill = function( collection ){
+var classPrototype = {}
+
+classPrototype.fill = function( collection ){
   var that = this
   collection.forEach(function( node ){
     that.insert( node )
@@ -113,7 +142,7 @@ NodesInstance.prototype.fill = function( collection ){
   return this
 }
 
-NodesInstance.prototype.clone = function( cloneData ){
+classPrototype.clone = function( cloneData ){
   var newNodes = new NodesInstance(this.def, this.options)
   if( cloneData ){
     newNodes.fill( this.data.map(function( node ){ return node.clone() }) )
@@ -121,7 +150,7 @@ NodesInstance.prototype.clone = function( cloneData ){
   return newNodes
 }
 
-NodesInstance.prototype.insert = function( data, index ) {
+classPrototype.insert = function( data, index ) {
   index = index || 0
   if( _.isPlainObject(data) && this.factory ){
     data = new this.factory( data )
@@ -136,7 +165,7 @@ NodesInstance.prototype.insert = function( data, index ) {
 }
 
 
-NodesInstance.prototype.update = function( where, updateEJSON ) {
+classPrototype.update = function( where, updateEJSON ) {
   this.data.forEach(function( node ){
     if( util.objectMatch( node.toObject, where) ){
       node.set(updateEJSON)
@@ -144,7 +173,7 @@ NodesInstance.prototype.update = function( where, updateEJSON ) {
   })
 }
 
-NodesInstance.prototype.remove= function(where) {
+classPrototype.remove= function(where) {
   var that = this
   this.data.forEach(function( node, index ){
     if( util.objectMatch( node.toObject(), where ) ){
@@ -161,7 +190,7 @@ NodesInstance.prototype.remove= function(where) {
   that.data = _.compact( that.data )
 }
 
-NodesInstance.prototype.empty = function(){
+classPrototype.empty = function(){
   var that = this
   this.data.forEach(function( node, index ){
       //remove listener first
@@ -176,17 +205,17 @@ NodesInstance.prototype.empty = function(){
   that.data = []
 }
 
-NodesInstance.prototype.pull= function() {}
-NodesInstance.prototype.push= function() {}
-NodesInstance.prototype.verify= function() {}
+classPrototype.pull= function() {}
+classPrototype.push= function() {}
+classPrototype.verify= function() {}
 
-NodesInstance.prototype.commit = function( name ) {
+classPrototype.commit = function( name ) {
   this.data.forEach(function( node){
     node.commit( name )
   })
 }
 
-NodesInstance.prototype.rollback = function(name) {
+classPrototype.rollback = function(name) {
   this.data.forEach(function( node ){
     try{
       node.rollback( name )
@@ -197,7 +226,7 @@ NodesInstance.prototype.rollback = function(name) {
 }
 
 
-NodesInstance.prototype.find=NodesInstance.prototype.filter =  function() {
+classPrototype.find=classPrototype.filter =  function() {
   var filteredNodes = this.data.filter.apply(this.data, arguments)
   var newNodesInstance = this.clone( false )
   newNodesInstance.fill( filteredNodes )
@@ -205,25 +234,25 @@ NodesInstance.prototype.find=NodesInstance.prototype.filter =  function() {
 }
 
 
-NodesInstance.prototype.is = function(){
+classPrototype.is = function(){
   return this.states.is.apply(this.states, Array.prototype.slice.call(arguments))
 }
 
-NodesInstance.prototype.isAny = function(){
+classPrototype.isAny = function(){
   var args = Array.prototype.slice.call(arguments)
   return _.any(this.data, function( node ){
     return node.is.apply(node, args)
   })
 }
 
-NodesInstance.prototype.isEvery = function(){
+classPrototype.isEvery = function(){
   var args = Array.prototype.slice.call(arguments)
   return _.every(this.data, function( node ){
     return node.is.apply(node, args)
   })
 }
 
-NodesInstance.prototype.findOne = function(where) {
+classPrototype.findOne = function(where) {
   for( var i = 0; i < this.data.length; i++ ){
     if( util.objectMatch(this.data[i].toObject(), where) ){
       return this.data[i]
@@ -232,37 +261,41 @@ NodesInstance.prototype.findOne = function(where) {
   return null;
 }
 
-NodesInstance.prototype.forEach = function() {
+classPrototype.get = function( index ){
+  return this.data[index]
+}
+
+classPrototype.forEach = function() {
   this.data.forEach.apply(this.data, arguments)
 }
 
-NodesInstance.prototype.map = function() {
+classPrototype.map = function() {
   return this.data.map.apply(this.data, arguments)
 }
 
-NodesInstance.prototype.toArray = function() {
+classPrototype.toArray = function() {
   return this.data.map(function( node ){
     return node.toObject()
   })
 }
 
-NodesInstance.prototype.every = function() {
+classPrototype.every = function() {
   this.data.every.apply(this.data, arguments)
 }
 
-NodesInstance.prototype.any = function() {
+classPrototype.any = function() {
   this.data.any.apply(this.data, arguments)
 }
 
-NodesInstance.prototype.on = function( event, handler ){
+classPrototype.on = function( event, handler ){
   this.states.on( event, handler)
 }
 
-NodesInstance.prototype.off = function( event, handler ){
+classPrototype.off = function( event, handler ){
   this.states.removeListener( event, handler)
 }
 
-NodesInstance.prototype.onAny = function( event, handler ){
+classPrototype.onAny = function( event, handler ){
   if( !this.nodeListeners[event] ){
     this.nodeListeners[event] = []
   }
@@ -274,7 +307,7 @@ NodesInstance.prototype.onAny = function( event, handler ){
   })
 }
 
-NodesInstance.prototype.offAny = function( event, handler ){
+classPrototype.offAny = function( event, handler ){
 
   _.remove( this.nodeListeners[event], function( inArrayHandler){
     return inArrayHandler === handler
@@ -287,8 +320,8 @@ NodesInstance.prototype.offAny = function( event, handler ){
 
 //this is important
 NodesActions.forEach(function( action ){
-  util.decorateWithMiddleware( NodesInstance.prototype, action )
-  util.decorateWithState( NodesInstance.prototype, action )
+  util.decorateWithMiddleware( classPrototype, action )
+  util.decorateWithState( classPrototype, action )
 })
 
 module.exports = Nodes

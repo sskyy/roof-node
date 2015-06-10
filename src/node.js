@@ -18,27 +18,49 @@ var NodeActionTense = {
 var NodeActions = Object.keys(NodeActionTense)
 
 var Node = {
-  createClass : function( def, options ){
+  createClass : function( classDef, classOptions ){
+    classDef = classDef || {}
+    classOptions = classOptions || {}
+    var apis = _.pick(classDef, function( v ){
+      return _.isFunction( v )
+    })
+
+
+    //动态创建class
     var newNodeClass = function( data, options ){
-      var ins = new NodeInstance( newNodeClass.def, _.defaults( options || {}, newNodeClass.options) )
-      if( data ) ins.fill( data )
-      return ins
+      options = _.extend({}, classOptions, options )
+      classConstructor.call(this, classDef, options, data, apis)
+
+      //兼容旧api
+      this.isNodeInstance = true
     }
-    newNodeClass.def = def
-    newNodeClass.options = options
-    newNodeClass.combine = function( combine ){
-      newNodeClass.options.combine = combine
-    }
+
+    //绑定prototype
+    newNodeClass.prototype =_.clone(classPrototype)
+    newNodeClass.isNodeClass = true
+
+    //TODO 搞定combine
+    //newNodeClass.combine = function( combine ){
+    //  newNodeClass.options.combine = combine
+    //}
     return newNodeClass
   },
-  isNodeInstance : function ( obj ){
-    return obj instanceof NodeInstance
+  isNodeInstance:function( obj ){
+    return  obj && obj.isNodeInstance === true
+  },
+  isNodeClass:function( func ){
+    return func && func.isNodeClass === true
   }
 }
 
-function NodeInstance( def, options ){
+
+/*
+ * class prototype
+ */
+
+function classConstructor( def, options, data, apis ){
   var that = this
-  this.options = options || {}
+  this.options = options
   this.def = def
   this.updated = false
   this.states = {}
@@ -63,17 +85,30 @@ function NodeInstance( def, options ){
     }
     that.middlewareActions = util.loadMiddlewareActions(that.options.middleware)
   }
+
+  //设置api
+  this.api = _.mapValues(apis,  ( func)=>{
+    return func.bind(this)
+  })
+
+  if( data ) this.fill( data )
 }
 
-NodeInstance.prototype.on = function(){
+
+
+
+
+var classPrototype = {}
+
+classPrototype.on = function(){
   this.states.on.apply( this.states, Array.prototype.slice.call(arguments) )
 }
 
-NodeInstance.prototype.off = function(){
+classPrototype.off = function(){
   this.states.removeListener.apply( this.states, Array.prototype.slice.call(arguments) )
 }
 
-NodeInstance.prototype.set = function( path, value ){
+classPrototype.set = function( path, value ){
   /*
     TODO
     对所有verified过的数据打一个快照
@@ -91,11 +126,11 @@ NodeInstance.prototype.set = function( path, value ){
   return this.data.set(path, value)
 }
 
-NodeInstance.prototype.fill =function( obj ){
+classPrototype.fill =function( obj ){
   return this.data.fill( obj )
 }
 
-NodeInstance.prototype.commit =function( commitName ){
+classPrototype.commit =function( commitName ){
   if( commitName instanceof CombinedArgv ){
     commitName = undefined
   }
@@ -106,7 +141,7 @@ NodeInstance.prototype.commit =function( commitName ){
   return result
 }
 
-NodeInstance.prototype.rollback = function( commitName ){
+classPrototype.rollback = function( commitName ){
   var result = this.data.rollback(commitName)
   if( result ){
     this.states.reset("set")
@@ -114,29 +149,29 @@ NodeInstance.prototype.rollback = function( commitName ){
   return result
 }
 
-NodeInstance.prototype.get = function(path){
+classPrototype.get = function(path){
   return this.data.get(path)
 }
 
-NodeInstance.prototype.getRef = function(path){
+classPrototype.getRef = function(path){
   if( _.isArray(path) ) path = path.join(".")
   return this.data.getRef(path)
 }
 
-NodeInstance.prototype.toObject = function(path){
+classPrototype.toObject = function(path){
   //TODO
   return this.data.toObject()
 }
 
-NodeInstance.prototype.clone = function(){
+classPrototype.clone = function(){
   //TODO
 }
 
-NodeInstance.prototype.is = function(){
+classPrototype.is = function(){
   return this.states.is.apply(this.states, Array.prototype.slice.call(arguments))
 }
 
-NodeInstance.prototype.pull = NodeInstance.prototype.push = function rawUpdate( promise ){
+classPrototype.pull = classPrototype.push = function rawUpdate( promise ){
   //this function will be called after user's handler
   var that = this
   return Promise.resolve(promise).then(function(){
@@ -151,7 +186,7 @@ NodeInstance.prototype.pull = NodeInstance.prototype.push = function rawUpdate( 
   })
 }
 
-NodeInstance.prototype.verify = function( promise ) {
+classPrototype.verify = function( promise ) {
   //this function will be called after user's handler
   var that = this
   return Promise.resolve(promise).then(function () {
@@ -164,12 +199,12 @@ NodeInstance.prototype.verify = function( promise ) {
 
 //this is important
 NodeActions.forEach(function( action ){
-  util.decorateWithMiddleware( NodeInstance.prototype, action )
-  util.decorateWithState( NodeInstance.prototype, action )
+  util.decorateWithMiddleware( classPrototype, action )
+  util.decorateWithState( classPrototype, action )
 })
 
 
-NodeInstance.prototype.combine = function( actionsToCombine ){
+classPrototype.combine = function( actionsToCombine ){
   if( this.combinedActions ){
     return console.warn("This instance already combined actions : ", this.combine)
   }
@@ -179,7 +214,7 @@ NodeInstance.prototype.combine = function( actionsToCombine ){
     var argv = Array.prototype.slice.call(arguments)
     return util.promiseSeries( actionsToCombine, function(action){
       console.log("calling combined action", action)
-      return NodeInstance.prototype[action].call( that, new CombinedArgv( _.clone(actionsToCombine), _.cloneDeep(argv)) )
+      return classPrototype[action].call( that, new CombinedArgv( _.clone(actionsToCombine), _.cloneDeep(argv)) )
     })
   }
   this.combinedActions = actionsToCombine
