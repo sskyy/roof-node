@@ -1,6 +1,6 @@
 {
   "name": "roof-node",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "scripts": {
     "test": "mocha --require ./test/init.js --compilers js:babel/register  ./test/spec/*",
     "testone": "mocha --require ./test/init.js --compilers js:babel/register",

@@ -1,6 +1,7 @@
 var _ = require("lodash")
 var Node = require("../lib/node.js")
 var Nodes = require("../lib/nodes.js")
+var React = require("react")
 
 function getRef( obj, name ){
   var ns = !_.isArray(name) ? name.split('.') : name,
@@ -39,13 +40,37 @@ function Mixin( data, def ){
     this.setState(getStateProxy(randomKey))
   }
 
-  mixinInstance[def.attach] = _.mapValues( def.cursors, function( name){
-    var dataRef = getRef( data, name )
-    if( !dataRef ){ console.warn("you are requiring an undefined cursor", name, JSON.stringify(data))}
-    return dataRef
-  })
+  if( data.isServerRendering === true){
+    mixinInstance.contextTypes =  {
+      roofServerRenderingKey: React.PropTypes.string.isRequired
+    }
+  }
+
 
   mixinInstance.getInitialState = function(){
+    var that = this
+    this[def.attach] = _.mapValues( def.cursors, function( name){
+      var dataRef
+      if( data.isServerRendering === true) {
+        //服务器端渲染
+        dataRef = getRef(data.getData(that.context.roofServerRenderingKey), name)
+      }else{
+        //非服务器端渲染
+        dataRef = getRef(data, name)
+      }
+      if (!dataRef) {
+        console.warn("you are requiring an undefined cursor", name, JSON.stringify(data))
+      }
+      return dataRef
+    })
+
+
+    //utilities
+    this[def.attach]._handleFormChange = function( cursor, field, e ){
+      cursor.set(field, e.target.value)
+    }
+
+
     return getStateProxy(randomKey)
   }
 
@@ -75,17 +100,14 @@ function Mixin( data, def ){
   }
 
 
-  //utilities
-  mixinInstance[def.attach]._handleFormChange = function( cursor, field, e ){
-    cursor.set(field, e.target.value)
-  }
+
 
   return mixinInstance
 }
 
 
 
-module.exports = Mixin
+module.exports = Mixin;
 
 module.exports.util = {
   handleFormChange : function( data, field, e ){
