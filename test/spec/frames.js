@@ -49,6 +49,69 @@ describe("initialize with options", function(){
     assert.equal(frames.length, 1)
   })
 
+  it("set method use replace mechanism as default", function(){
+    var frames = new Frames()
+    var musics = ['a','b','c']
+    var newMusics = ['d','e','f','g']
+
+    frames.set("jhon",{
+      like : {
+        music : musics,
+        movie : {
+          "goneWithWind" : 5,
+          "Xman" : 6
+        }
+      }
+    })
+
+    assert.equal(frames.get("jhon.like.music").length, musics.length)
+    frames.set("jhon.like.music",newMusics)
+    assert.equal(frames.get("jhon.like.music").length, newMusics.length)
+    assert.equal(frames.get("jhon.like.music")[0], newMusics[0])
+
+    //保存的是对象引用
+    assert.equal(frames.get("jhon.like.music")===newMusics,true)
+
+  })
+
+
+  it("merge method use merge mechanism ", function(){
+    var frames = new Frames()
+    var movies = {
+      "goneWithWind" : 5,
+      "Xman" : 6
+    }
+    var newMovies = {
+      "nancy" :1
+    }
+
+    frames.set("jhon",{
+      like : {
+        movie : movies
+      }
+    })
+
+
+    frames.merge("jhon.like.movie",newMovies)
+
+    assert.equal(frames.get("jhon.like.movie").nancy, newMovies.nancy)
+    assert.equal(frames.get("jhon.like.movie").goneWithWind, movies.goneWithWind)
+    assert.equal(frames.get("jhon.like.movie").Xman, movies.Xman)
+
+    //merge的不是原来的对象引用
+    assert.equal(frames.get("jhon.like.movie")===movies,false)
+
+    frames.set("jhon.like.movie",newMovies)
+    assert.equal(frames.get("jhon.like.movie").nancy, newMovies.nancy)
+    assert.equal(frames.get("jhon.like.movie").goneWithWind,undefined)
+    assert.equal(frames.get("jhon.like.movie").Xman, undefined)
+
+
+
+
+  })
+
+
 
 
   

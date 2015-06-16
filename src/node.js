@@ -116,14 +116,28 @@ classPrototype.set = function( path, value ){
     而不是像现在这样只要有改动就设置成dirty
    */
 
-  //TODO 支持通过EJSON的方式来更新字段
-
   if( path instanceof CombinedArgv ){
     value = path[1]
     path = path[0]
   }
   this.states.deactivate("clean")
   return this.data.set(path, value)
+}
+
+classPrototype.merge = function( path, value ){
+  /*
+   TODO
+   对所有verified过的数据打一个快照
+   这样有改动时既可以和最新的这个快照对比，看看是不是clean的，
+   而不是像现在这样只要有改动就设置成dirty
+   */
+
+  if( path instanceof CombinedArgv ){
+    value = path[1]
+    path = path[0]
+  }
+  this.states.deactivate("clean")
+  return this.data.merge(path, value)
 }
 
 classPrototype.fill =function( obj ){
@@ -151,11 +165,6 @@ classPrototype.rollback = function( commitName ){
 
 classPrototype.get = function(path){
   return this.data.get(path)
-}
-
-classPrototype.getRef = function(path){
-  if( _.isArray(path) ) path = path.join(".")
-  return this.data.getRef(path)
 }
 
 classPrototype.toObject = function(path){
