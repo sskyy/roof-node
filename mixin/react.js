@@ -65,10 +65,10 @@ function Mixin( data, def ){
     })
 
 
-    //utilities
-    this[def.attach]._handleFormChange = function( cursor, field, e ){
-      cursor.set(field, e.target.value)
-    }
+    ////utilities
+    //this[def.attach]._handleFormChange = function( cursor, field, e ){
+    //  cursor.set(field, e.target.value)
+    //}
 
 
     return getStateProxy(randomKey)
