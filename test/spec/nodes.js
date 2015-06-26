@@ -136,6 +136,18 @@ describe("events test", function(){
       assert.equal( error, true)
     })
   })
+
+  describe("nodes order should follow the same", function(){
+    it("order of initial", function(){
+      var data = [{name:"jason"},{name:"tommy"}]
+      var List = Nodes.createClass()
+      var list = new List(data)
+      list.forEach(function( item, i){
+        assert.equal( item.get("name") , data[i].name)
+      })
+    })
+  })
+
   //
   //it("sub object event should propagate", function(done){
   //  var users = new UserNodes
