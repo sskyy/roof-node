@@ -1,26 +1,35 @@
-var bPromise = require("bluebird")
-var _ = require("lodash")
+function isObject( obj ){
+  return typeof obj === 'object'
+}
 
+function zipObject(keys, values){
+  var output = {}
+  for( let i in keys ){
+    output[keys[i]] = values[i]
+  }
+  return output
+}
 
 function loadMiddlewareActions( middlewares ){
   var middlewareActions = {}
   var keys =["before","fn","after"]
   middlewares.forEach(function( middleware){
-    _.forEach( middleware, function( actionDef, action){
+    for( let action in middleware ){
+      let actionDef = middleware[action]
       if( !middlewareActions[action] ){
-        middlewareActions[action] = _.zipObject(keys, keys.map(function(){return []}))
+        middlewareActions[action] = zipObject(keys, keys.map(function(){return []}))
       }
 
-      if( _.isFunction(actionDef )){
+      if( typeof actionDef === 'function' ){
         middlewareActions[action].fn.push( actionDef )
-      }else if( _.isObject( actionDef)){
+      }else if( isObject( actionDef)){
         keys.forEach(function(key){
-          _.isFunction(actionDef[key])  && middlewareActions[action][key].push( actionDef[key] )
+          (typeof actionDef[key] === 'function')  && middlewareActions[action][key].push( actionDef[key] )
         })
       }else{
         console.warn("unrecognized middleware action definition:",actionDef)
       }
-    })
+    }
   })
 
   return middlewareActions
@@ -35,7 +44,7 @@ function decorateWithState (prototype, action){
     //don't user Promise.resolve to deal with none Promise result
     //cause the callback invoke in next tick.
     var res = rawAction.apply( that, argv )
-    if( res && _.isFunction(res.then) ){
+    if( res && typeof res.then === 'function' ){
       return res.then(function(data){
         that.states.end(action)
         return data
@@ -91,20 +100,117 @@ function promiseSeries(fns, iterator) {
 }
 
 function objectMatch( obj, where){
-  for( var i in where ){
+  for( let i in where ){
     if( !where.hasOwnProperty(i) || !obj.hasOwnProperty(i)) return false;
-    if( _.isObject( where[i]) !== _.isObject(where[i])) return false;
-    if( !_.isObject( where[i]) && where[i] !== obj[i] ) return false;
-    if( _.isObject( where[i])  && !objectMatch(obj[i],where[i]) ) return false
+    if( isObject( where[i]) !== isObject(where[i])) return false;
+    if( !isObject( where[i]) && where[i] !== obj[i] ) return false;
+    if( isObject( where[i])  && !objectMatch(obj[i],where[i]) ) return false
   }
   return true
 }
 
+var pick = require('lodash.pick')
+
+var  intersection = require('lodash.intersection')
+
+
+var extend = require('object-assign')
+
+function isArray( arr ){
+  return Object.prototype.toString.call(arr) === '[object Array]'
+}
+
+function clone( source ){
+  return extend({}, source)
+}
+
+var isPlainObject = require('lodash.isplainobject')
+
+var cloneDeep = require('lodash.clonedeep')
+
+function defaults( target, source ){
+  var output = clone( target )
+  for( let i in source ){
+    if( output[i] === undefined ){
+      output[i] = source[i]
+    }
+  }
+  return output
+}
+
+function forEach( obj, handler  ){
+  for( let i in obj ){
+    if( obj.hasOwnProperty(i)){
+      handler( obj[i], i)
+    }
+  }
+}
+
+var merge = require('lodash.merge')
+
+function any(obj, handler ){
+  for( let i in obj ){
+    if( obj.hasOwnProperty(i) && handler(obj[i],i)){
+      return true
+    }
+  }
+
+  return false
+}
+
+function every(obj, handler ){
+  for( let i in obj ){
+    if( obj.hasOwnProperty(i) && !handler(obj[i],i)){
+      return false
+    }
+  }
+
+  return true
+}
+
+var remove = require('lodash.remove')
+var compact = require('lodash.compact')
+
+
+
+function mapValues(obj,handler){
+  var output = {}
+  forEach(obj, function( value,key ){
+    output[key] =  handler( value, key)
+  })
+  return output
+}
+
+function transform( obj, handler ){
+  var output = {}
+  forEach(obj, function( value,key ){
+    handler( output, value, key)
+  })
+  return output
+}
 
 module.exports = {
-  promiseSeries : promiseSeries,
-  loadMiddlewareActions : loadMiddlewareActions,
-  decorateWithMiddleware:decorateWithMiddleware,
-  decorateWithState:decorateWithState,
-  objectMatch:objectMatch
+  promiseSeries,
+  loadMiddlewareActions,
+  decorateWithMiddleware,
+  decorateWithState,
+  objectMatch,
+  pick,
+  extend,
+  isArray,
+  isObject,
+  clone,
+  zipObject,
+  cloneDeep,
+  intersection,
+  isPlainObject,
+  defaults,
+  forEach,
+  merge,
+  any,
+  every,
+  remove,
+  compact,
+  mapValues,
+  transform
 }

@@ -1,9 +1,9 @@
-var _ = require("lodash")
+var util = require('./util')
 
 function Frames(options){
   var that = this
 
-  this.options = _.defaults(options || {}, {
+  this.options = util.defaults(options || {}, {
     frameLimit : 5
   })
   this.data = {}
@@ -20,8 +20,8 @@ function Frames(options){
 
 Frames.prototype.set = function( path , value ){
   var that = this
-  if( _.isPlainObject(path) ){
-    _.forEach( path, function( v, k ){
+  if( util.isPlainObject(path) ){
+    util.forEach( path, function( v, k ){
       setRef(that.data, k, v)
     })
   }else{
@@ -31,8 +31,8 @@ Frames.prototype.set = function( path , value ){
 
 Frames.prototype.merge = function( path, value ){
   var that = this
-  if( _.isPlainObject(path) ){
-    _.forEach( path, function( v, k ){
+  if( util.isPlainObject(path) ){
+    util.forEach( path, function( v, k ){
       setRef(that.data, k, v, true)
     })
   }else{
@@ -50,7 +50,7 @@ Frames.prototype.get = function( path ){
 
 
 Frames.prototype.toObject = function(){
-  return _.cloneDeep( this.data )
+  return util.cloneDeep( this.data )
 }
 
 Frames.prototype.commit = function( commitName ){
@@ -61,7 +61,7 @@ Frames.prototype.commit = function( commitName ){
     throw new Error("commit name already exists: " + commitName)
   }
 
-  this.historyValues.push( _.cloneDeep(this.data) )
+  this.historyValues.push( util.cloneDeep(this.data) )
   this.historyNames.push( commitName )
   if( this.historyNames.length > this.options.frameLimit ){
     this.historyNames.shift()
@@ -91,7 +91,7 @@ function getRef( obj, name ){
     currentName
 
   while( currentName = ns.shift() ){
-    if(_.isObject(ref) && ref[currentName]!==undefined){
+    if(util.isObject(ref) && ref[currentName]!==undefined){
       ref = ref[currentName]
     }else{
       ref = undefined
@@ -112,8 +112,8 @@ function setRef( obj, name, data, merge ){
     if( ns.length == 0 ){
       //这里不再隐式地提供merge功能
       //要merge请使用merge接口
-      if( _.isObject(ref[currentName]) && merge ){
-        ref[currentName] = _.merge({},ref[currentName], data)
+      if( util.isObject(ref[currentName]) && merge ){
+        ref[currentName] = util.merge({},ref[currentName], data)
       }else{
         if( ref[currentName] !== undefined ) console.warn("you are replacing a exist data", name)
         ref[currentName] = data
@@ -122,7 +122,7 @@ function setRef( obj, name, data, merge ){
 
 
     }else{
-      if( !_.isObject(ref[currentName])) {
+      if( !util.isObject(ref[currentName])) {
         if( ref[currentName] !== undefined ) console.warn("your data will be reset to an object", currentName)
         ref[currentName] = {}
       }

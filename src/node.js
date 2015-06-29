@@ -1,4 +1,3 @@
-var _ = require("lodash")
 var Frames = require("./frames")
 var States = require("./states")
 var util = require("./util")
@@ -21,19 +20,19 @@ var Node = {
   createClass : function( classDef, classOptions ){
     classDef = classDef || {}
     classOptions = classOptions || {}
-    var apis = _.pick(classDef, function( v ){
-      return _.isFunction( v )
+    var apis = util.pick(classDef, function( v ){
+      return typeof  v === 'function'
     })
 
     //api与Node方法重名检测
-    var conflictedApis =  _.intersection( Object.keys(apis), Object.keys( classPrototype))
+    var conflictedApis =  util.intersection( Object.keys(apis), Object.keys( classPrototype))
     if(conflictedApis.length !==0){
       throw new Error("Api conflict with Roof Node prototype methods:" + conflictedApis.join(","))
     }
 
     //动态创建class
     var newNodeClass = function( data, options ){
-      options = _.extend({}, classOptions, options )
+      options = util.extend({}, classOptions, options )
       classConstructor.call(this, classDef, options, data)
 
       //兼容旧api
@@ -41,7 +40,7 @@ var Node = {
     }
 
     //绑定prototype
-    newNodeClass.prototype = _.extend(_.clone(classPrototype), apis)
+    newNodeClass.prototype = util.extend(util.clone(classPrototype), apis)
     newNodeClass.isNodeClass = true
 
     //TODO 搞定combine
@@ -85,7 +84,7 @@ function classConstructor( def, options, data ){
 
   //load middlewares
   if( that.options.middleware ){
-    if( !_.isArray( that.options.middleware ) ){
+    if( !util.isArray( that.options.middleware ) ){
       that.options.middleware = [that.options.middleware]
     }
     that.middlewareActions = util.loadMiddlewareActions(that.options.middleware)
@@ -224,7 +223,7 @@ classPrototype.combine = function( actionsToCombine ){
   that[mainAction] = function(){
     var argv = Array.prototype.slice.call(arguments)
     return util.promiseSeries( actionsToCombine, function(action){
-      return classPrototype[action].call( that, new CombinedArgv( _.clone(actionsToCombine), _.cloneDeep(argv)) )
+      return classPrototype[action].call( that, new CombinedArgv( util.clone(actionsToCombine), util.cloneDeep(argv)) )
     })
   }
   this.combinedActions = actionsToCombine

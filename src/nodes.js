@@ -1,5 +1,3 @@
-//var Promise = require("bluebird")
-var _ = require("lodash")
 var States = require("./states")
 var util = require("./util")
 var Node = require("./node.js")
@@ -33,27 +31,27 @@ var Nodes = {
       }
     }
 
-    var apis = _.pick(classDef, function( v ){
-      return _.isFunction( v )
+    var apis = util.pick(classDef, function( v ){
+      return typeof v === 'function'
     })
 
     //api与Node方法重名检测
-    var conflictedApis =  _.intersection( Object.keys(apis), Object.keys( classPrototype))
+    var conflictedApis =  util.intersection( Object.keys(apis), Object.keys( classPrototype))
     if(conflictedApis.length !==0){
       throw new Error("Api conflict with Roof Node prototype methods:" + conflictedApis.join(","))
     }
 
     //创建class
     var newClass = function( data,options ){
-      options = _.extend({}, classOptions, options)
+      options = util.extend({}, classOptions, options)
       classConstructor.call( this, classDef, data, options, apis)
       this.isNodesInstance = true
     }
 
-    newClass.prototype = _.extend({}, classPrototype,  apis)
+    newClass.prototype = util.extend({}, classPrototype,  apis)
 
     if( classOptions.facade ){
-      _.forEach(classOptions.facade, function( fn, name ){
+      util.forEach(classOptions.facade, function( fn, name ){
         newClass[name] = fn.bind(newClass)
       })
     }
@@ -124,7 +122,7 @@ function classConstructor( def, data, options, apis ){
 
   //load middlewares
   if( that.options.middleware ){
-    if( !_.isArray( that.options.middleware ) ){
+    if( !util.isArray( that.options.middleware ) ){
       that.options.middleware = [that.options.middleware]
     }
     that.middlewareActions = util.loadMiddlewareActions(that.options.middleware)
@@ -156,12 +154,12 @@ classPrototype.clone = function( cloneData ){
 
 classPrototype.insert = function( data, index ) {
   index = index || this.data.length
-  if( _.isPlainObject(data) && this.factory ){
+  if( util.isPlainObject(data) && this.factory ){
     data = new this.factory( data )
   }
   this.data = this.data.slice(0, index).concat( data, this.data.slice(index) )
 
-  _.forEach(this.nodeListeners, function(  listeners, event){
+  util.forEach(this.nodeListeners, function(  listeners, event){
     listeners.forEach(function(listener){
       data.on(event, listener)
     })
@@ -182,7 +180,7 @@ classPrototype.remove= function(where) {
   this.data.forEach(function( node, index ){
     if( util.objectMatch( node.toObject(), where ) ){
       //remove listener first
-      _.forEach(that.nodeListeners, function( listeners, event ){
+      util.forEach(that.nodeListeners, function( listeners, event ){
         listeners.forEach(function(listener){
           that.data[index].off(event, listener)
         })
@@ -191,14 +189,14 @@ classPrototype.remove= function(where) {
       that.data[index] = false
     }
   })
-  that.data = _.compact( that.data )
+  that.data = util.compact( that.data )
 }
 
 classPrototype.empty = function(){
   var that = this
   this.data.forEach(function( node, index ){
       //remove listener first
-    _.forEach(that.nodeListeners, function(listeners, event){
+    util.forEach(that.nodeListeners, function(listeners, event){
       listeners.forEach(function(listener){
         that.data[index].off(event, listener)
       })
@@ -245,14 +243,14 @@ classPrototype.is = function(){
 
 classPrototype.isAny = function(){
   var args = Array.prototype.slice.call(arguments)
-  return _.any(this.data, function( node ){
+  return util.any(this.data, function( node ){
     return node.is.apply(node, args)
   })
 }
 
 classPrototype.isEvery = function(){
   var args = Array.prototype.slice.call(arguments)
-  return _.every(this.data, function( node ){
+  return util.every(this.data, function( node ){
     return node.is.apply(node, args)
   })
 }
@@ -314,7 +312,7 @@ classPrototype.onAny = function( event, handler ){
 
 classPrototype.offAny = function( event, handler ){
 
-  _.remove( this.nodeListeners[event], function( inArrayHandler){
+  util.remove( this.nodeListeners[event], function( inArrayHandler){
     return inArrayHandler === handler
   })
 

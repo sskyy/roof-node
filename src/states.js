@@ -2,34 +2,37 @@
  * @see https://docs.google.com/document/d/1VDborHDR0f5a_LnTHUoQlGxWHy5M7FcTWDy_zmYYVMo/edit?usp=sharing
  */
 
-var _ = require("lodash")
-var util = require("util")
+var util = require("./util")
+var sysUtil = require("util")
 var events = require("events")
-
 var ActionStates =  ["initial", "started", "ended"]
+
+
+
+
 
 function States( def ){
   var that = this
   that.def = def
   that.actions = that.def.tenses ? Object.keys(that.def.tenses) : []
 
-  that.actionTenseMap = _.transform( that.def.tenses, function( result, v, k ){
+  that.actionTenseMap = util.transform( that.def.tenses, function( result, v, k ){
     v.forEach(function( state, i ){
       result[state] = [k, ActionStates[i]]
     })
   })
 
-  that.naiveStateMap = _.transform( that.def.naive, function( result, v, k ){
+  that.naiveStateMap = util.transform( that.def.naive, function( result, v, k ){
     v.forEach(function( state ){
       result[state] = k
     })
   })
 
-  that.states = _.merge(
-    _.mapValues(that.def.tenses, function(){
+  that.states = util.merge(
+    util.mapValues(that.def.tenses, function(){
       return ActionStates[0]
     }),
-    _.mapValues(that.def.naive, function(){
+    util.mapValues(that.def.naive, function(){
       return null
     })
   )
@@ -37,7 +40,7 @@ function States( def ){
   events.EventEmitter.call(this)
 }
 
-util.inherits(States, events.EventEmitter)
+sysUtil.inherits(States, events.EventEmitter)
 
 States.prototype.set = function( name, value ){
   var lastValue = this.states[name]
@@ -85,10 +88,10 @@ States.prototype.deactivate = function( state ) {
 States.prototype.is = function( state ){
   var argv = Array.prototype.slice.call(arguments)
   var that = this
-  return _.every(argv, function( state ){
-    if( !_.isArray(state) ) state = [state]
+  return util.every(argv, function( state ){
+    if( !util.isArray(state) ) state = [state]
 
-    return _.any(state, function( s ){
+    return util.any(state, function( s ){
       if( !that.actionTenseMap[s] && !that.naiveStateMap[s] ) throw new Error("unknown state " + s)
       if( s === "valid") console.log(that.naiveStateMap["valid"], that.states.valid)
       return that.actionTenseMap[s]
