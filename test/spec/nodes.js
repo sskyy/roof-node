@@ -52,6 +52,7 @@ describe("states test", function(){
 })
 
 describe("events test", function(){
+
   it("state change should fire event", function(done){
     var users = new UserNodes
     async.parallel([
@@ -69,125 +70,129 @@ describe("events test", function(){
           cb()
         })
       }
-    ], function(){
-      done()
+    ], function(err){
+      done(err)
     });
 
     users.push()
   })
 
-  describe("prototype test", function(){
-    it("instance of should work", function(){
-      var users = new UserNodes
-      var UserNodes2 = Nodes.createClass(User)
-      var users2 = new UserNodes2
-      assert.equal( users instanceof  UserNodes, true)
-      assert.equal( users2 instanceof  UserNodes2, true)
-      assert.equal( users instanceof  UserNodes2, false)
-      assert.equal( users2 instanceof  UserNodes, false)
-    })
-    it("old api should work too", function(){
-      var users = new UserNodes
-      assert.equal( Nodes.isNodesInstance(users) ,true)
-      assert.equal( Nodes.isNodesClass(UserNodes) ,true)
-    })
-  })
 
-  describe("nodes api test", function(){
-    it("api should work", function(){
-      var UserList = Nodes.createClass({
-        setAllName : function(name){
-          return this.forEach(function(node){
-            node.set("name", name)
-          })
-        },
-        getTotalAge : function( ){
-          var total = 0
-          this.forEach(function( node){
-            total += node.get("age")
-          })
-          return total
-        }
-      })
+  it("sub object event should propagate", function(done){
+    var users = new UserNodes
+    var user = new User
+    async.parallel([
+      function( cb ){
+        users.onAny("pushing", function( val, oldVal){
 
-      var users = new UserList
-      users.insert({"name":"jhon", age:21})
-      users.insert({"name":"maya", age:32})
-
-      assert.equal( users.getTotalAge(), 53)
-      users.setAllName("jesper")
-
-      assert.equal( users.getTotalAge(), 53)
-      assert.equal( users.get(0).get("name"), "jesper")
-    })
-
-    it("api conflict should fail", function(){
-      var error =false
-      try{
-        Node.createClass({
-          set : function(){},
-          get : function(){},
-          commit : function(){}
+          assert.equal( val, 'pushing')
+          assert.equal( oldVal, 'unpushed')
+          cb()
         })
-      }catch(e){
-        console.log(e)
-        error = true
+      },
+      function( cb ){
+        users.onAny("pushed", function( val, oldVal){
+          assert.equal( val, 'pushed')
+          assert.equal( oldVal, 'pushing')
+          cb()
+        })
+      },
+      function(cb){
+        users.insert(user)
+        cb()
       }
-      assert.equal( error, true)
+    ], function(err){
+      done(err)
+    });
+
+    user.push()
+  })
+})
+
+describe("prototype test", function(){
+  it("instance of should work", function(){
+    var users = new UserNodes
+    var UserNodes2 = Nodes.createClass(User)
+    var users2 = new UserNodes2
+    assert.equal( users instanceof  UserNodes, true)
+    assert.equal( users2 instanceof  UserNodes2, true)
+    assert.equal( users instanceof  UserNodes2, false)
+    assert.equal( users2 instanceof  UserNodes, false)
+  })
+  it("old api should work too", function(){
+    var users = new UserNodes
+    assert.equal( Nodes.isNodesInstance(users) ,true)
+    assert.equal( Nodes.isNodesClass(UserNodes) ,true)
+  })
+})
+
+describe("nodes api test", function(){
+  it("api should work", function(){
+    var UserList = Nodes.createClass({
+      setAllName : function(name){
+        return this.forEach(function(node){
+          node.set("name", name)
+        })
+      },
+      getTotalAge : function( ){
+        var total = 0
+        this.forEach(function( node){
+          total += node.get("age")
+        })
+        return total
+      }
     })
+
+    var users = new UserList
+    users.insert({"name":"jhon", age:21})
+    users.insert({"name":"maya", age:32})
+
+    assert.equal( users.getTotalAge(), 53)
+    users.setAllName("jesper")
+
+    assert.equal( users.getTotalAge(), 53)
+    assert.equal( users.get(0).get("name"), "jesper")
   })
 
-  describe("nodes order should follow the same", function(){
-    it("order of initial", function(){
-      var data = [{name:"jason"},{name:"tommy"}]
-      var List = Nodes.createClass()
-      var list = new List(data)
-      list.forEach(function( item, i){
-        assert.equal( item.get("name") , data[i].name)
+  it("api conflict should fail", function(){
+    var error =false
+    try{
+      Node.createClass({
+        set : function(){},
+        get : function(){},
+        commit : function(){}
       })
+    }catch(e){
+      console.log(e)
+      error = true
+    }
+    assert.equal( error, true)
+  })
+})
+
+describe("nodes order should follow the same", function(){
+  it("order of initial", function(){
+    var data = [{name:"jason"},{name:"tommy"}]
+    var List = Nodes.createClass()
+    var list = new List(data)
+    list.forEach(function( item, i){
+      assert.equal( item.get("name") , data[i].name)
     })
   })
+})
 
-  describe("remove item test", function(){
-    it("destroy should remove item", function(){
-      var data = [{name:"jason"},{name:"tommy"}]
-      var List = Nodes.createClass()
-      var list = new List(data)
+describe("remove item test", function(){
+  it("destroy should remove item", function(){
+    var data = [{name:"jason"},{name:"tommy"}]
+    var List = Nodes.createClass()
+    var list = new List(data)
 
-      assert.equal( list.length, data.length )
-      var jason = list.findOne({name:"jason"})
-      jason.destroy()
+    assert.equal( list.length, data.length )
+    var jason = list.findOne({name:"jason"})
+    jason.destroy()
 
-      assert.equal( list.length, data.length - 1 )
-    })
+    assert.equal( list.length, data.length - 1 )
   })
-
-  //
-  //it("sub object event should propagate", function(done){
-  //  var users = new UserNodes
-  //  var user = User.new()
-  //  users.insert( user )
-  //  async.parallel([
-  //    function( cb ){
-  //      users.onAny("pushing", function( val, oldVal){
-  //        assert.equal( val, 'pushing')
-  //        assert.equal( oldVal, 'unpushed')
-  //        cb()
-  //      })
-  //    },
-  //    function( cb ){
-  //      users.onAny("pushed", function( val, oldVal){
-  //        assert.equal( val, 'pushed')
-  //        assert.equal( oldVal, 'pushing')
-  //        cb()
-  //      })
-  //    }
-  //  ], function(){
-  //    done()
-  //  });
-  //
-  //  user.push()
-  //})
 })
 
 //

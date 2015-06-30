@@ -210,6 +210,30 @@ describe("state event test", function(){
     miya.set("name","miya")
   })
 
+  it("push change should fire event", function(done){
+    var miya = new User
+    async.parallel([
+      function( cb ){
+        miya.on("pushing", function( val, oldVal){
+          assert.equal( val, 'pushing')
+          assert.equal( oldVal, 'unpushed')
+          cb()
+        })
+      },
+      function( cb ){
+        miya.on("pushed", function( val, oldVal){
+          assert.equal( val, 'pushed')
+          assert.equal( oldVal, 'pushing')
+          cb()
+        })
+      }
+    ], function(){
+      done()
+    });
+
+    miya.push()
+  })
+
   it("once should fire only once", function(){
     var jane = new User
     var fired = 0
