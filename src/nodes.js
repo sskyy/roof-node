@@ -128,6 +128,12 @@ function classConstructor( def, data, options, apis ){
     that.middlewareActions = util.loadMiddlewareActions(that.options.middleware)
   }
 
+  //length
+  Object.defineProperty(this, 'length',{
+    get: ()=>{
+      return this.data.length
+    }
+  })
 
   if( data ){
     this.fill( data )
@@ -164,8 +170,12 @@ classPrototype.insert = function( data, index ) {
       data.on(event, listener)
     })
   })
-}
 
+  // 监听子元素的 destroy
+  data.once('destroyed',()=>{
+    this.remove(data)
+  })
+}
 
 classPrototype.update = function( where, updateEJSON ) {
   this.data.forEach(function( node ){
@@ -178,7 +188,9 @@ classPrototype.update = function( where, updateEJSON ) {
 classPrototype.remove= function(where) {
   var that = this
   this.data.forEach(function( node, index ){
-    if( util.objectMatch( node.toObject(), where ) ){
+    // 增加直接 remove 某个引用的功能
+    var isMatch = ( where instanceof  that.factory ) ? ( node === where ) : util.objectMatch( node.toObject(), where )
+    if( isMatch ){
       //remove listener first
       util.forEach(that.nodeListeners, function( listeners, event ){
         listeners.forEach(function(listener){
@@ -320,6 +332,8 @@ classPrototype.offAny = function( event, handler ){
     node.off( event, handler )
   })
 }
+
+//TODO 增加 reactive map/transform 等函数
 
 //this is important
 NodesActions.forEach(function( action ){

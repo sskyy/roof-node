@@ -11,7 +11,8 @@ var NodeActionTense = {
   'set': ['unset','setting','set'],
   'commit': ['uncommitted','committing','committed'],
   'rollback': ['unrollbacked','rollbacking','rollbacked'],
-  'replace': ['unreplaced','replacing','replaced']
+  'replace': ['unreplaced','replacing','replaced'],
+  'destroy': ['undestroyed','destroying','destroyed']
 }
 
 var NodeActions = Object.keys(NodeActionTense)
@@ -103,6 +104,11 @@ classPrototype.on = function(){
   this.states.on.apply( this.states, Array.prototype.slice.call(arguments) )
 }
 
+classPrototype.once = function( event, onceFunc ){
+  this.states.once.apply( this.states, Array.prototype.slice.call(arguments) )
+}
+
+
 classPrototype.off = function(){
   this.states.removeListener.apply( this.states, Array.prototype.slice.call(arguments) )
 }
@@ -166,8 +172,7 @@ classPrototype.get = function(path){
   return this.data.get(path)
 }
 
-classPrototype.toObject = function(path){
-  //TODO
+classPrototype.toObject = function(){
   return this.data.toObject()
 }
 
@@ -206,6 +211,21 @@ classPrototype.verify = function( promise ) {
   })
 }
 
+// 增加 destroy
+classPrototype.destroy = function(){
+  // seal 所有操作的 api
+  Object.keys(NodeActionTense).forEach((method)=>{
+    if( method !== 'push' ){
+      this.lock( method, 'this node is destroyed')
+    }
+  })
+}
+
+classPrototype.lock = function( method, reason ){
+  this[method] = function(){
+    console.warn(`${method} method is locked, because ${reason}`)
+  }
+}
 
 //this is important
 NodeActions.forEach(function( action ){
@@ -228,6 +248,8 @@ classPrototype.combine = function( actionsToCombine ){
   }
   this.combinedActions = actionsToCombine
 }
+
+//TODO 增加 reactive transform 等函数？
 
 function CombinedArgv( combine, argv ){
   var that = this

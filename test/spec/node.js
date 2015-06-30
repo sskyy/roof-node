@@ -210,6 +210,18 @@ describe("state event test", function(){
     miya.set("name","miya")
   })
 
+  it("once should fire only once", function(){
+    var jane = new User
+    var fired = 0
+    jane.once("setting", function(){
+      fired ++
+    })
+    jane.set("name","jane")
+    jane.set("name","jone")
+
+    assert.equal( fired, 1)
+  })
+
 })
 
 describe("prototype test", function(){
@@ -264,6 +276,20 @@ describe("class api test", function(){
     assert.equal(error, true)
   })
 
+
+
+  it("destroyed item method will be locked", function(){
+    var jane = new User
+    var fired = 0
+    jane.once("setting", function() {
+      fired++
+    })
+
+    jane.destroy()
+    assert.equal( jane.is("destroyed"), true )
+    jane.set("name","jane")
+    assert.equal( jane.get("name"), undefined )
+  })
 })
 
 describe("push wrong data should change local object state to error",function(){

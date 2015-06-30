@@ -148,6 +148,20 @@ describe("events test", function(){
     })
   })
 
+  describe("remove item test", function(){
+    it("destroy should remove item", function(){
+      var data = [{name:"jason"},{name:"tommy"}]
+      var List = Nodes.createClass()
+      var list = new List(data)
+
+      assert.equal( list.length, data.length )
+      var jason = list.findOne({name:"jason"})
+      jason.destroy()
+
+      assert.equal( list.length, data.length - 1 )
+    })
+  })
+
   //
   //it("sub object event should propagate", function(done){
   //  var users = new UserNodes
