@@ -1,15 +1,52 @@
-var _ = require("lodash")
 var Node = require("../lib/node.js")
 var Nodes = require("../lib/nodes.js")
 var React = require("react")
 
+function forEach( obj, handler ){
+  for( var i in obj ){
+    if( obj.hasOwnProperty(i)){
+      handler( obj[i], i)
+    }
+  }
+}
+
+function isArray( arr ){
+  return Object.prototype.toString.call(arr) === '[object Array]'
+}
+
+function isObject( obj ){
+  return typeof obj === 'object'
+}
+
+function defaults( def, source ){
+  var output = {}
+  forEach(def, function( v,k){
+    output[k] = v
+  })
+
+  forEach(source, function(v,k){
+    if( output[k] === undefined ){
+      output[k] = v
+    }
+  })
+  return output
+}
+
+function mapValues( obj, handler ){
+  var output = {}
+  forEach( obj, function(v, k){
+    output[k] = handler(v, k )
+  })
+  return output
+}
+
 function getRef( obj, name ){
-  var ns = !_.isArray(name) ? name.split('.') : name,
+  var ns = !isArray(name) ? name.split('.') : name,
       ref = obj,
       currentName
 
   while( currentName = ns.shift() ){
-    if(_.isObject(ref) && ref[currentName]){
+    if(isObject(ref) && ref[currentName]){
       ref = ref[currentName]
     }else{
       ref = undefined
@@ -27,7 +64,7 @@ function getStateProxy( randomKey ){
 }
 
 function Mixin( data, def ){
-  def = _.defaults(def,{
+  def = defaults(def,{
     attach : "cursors",
     cursors : {}
   })
@@ -49,7 +86,7 @@ function Mixin( data, def ){
 
   mixinInstance.getInitialState = function(){
     var that = this
-    this[def.attach] = _.mapValues( def.cursors, function( name){
+    this[def.attach] = mapValues( def.cursors, function( name){
       var dataRef
       if( data.isServerRendering === true) {
         //服务器端渲染
@@ -78,7 +115,7 @@ function Mixin( data, def ){
     var that = this
     updater = updateComponentFromDataChange.bind(that,randomKey)
 
-    _.forEach( this[def.attach], function( obj ){
+    forEach( this[def.attach], function( obj ){
       if(  Node.isNodeInstance(obj)  ||  Nodes.isNodesInstance(obj) ){
         obj.on("change",updater)
         if( Nodes.isNodesInstance( obj )){
@@ -89,7 +126,7 @@ function Mixin( data, def ){
   }
 
   mixinInstance.componentWillUnmount = function(){
-    _.forEach( this[def.attach], function( obj ){
+    forEach( this[def.attach], function( obj ){
       if(  Node.isNodeInstance(obj)  ||  Nodes.isNodesInstance(obj) ){
         obj.off("change",updater)
         if( Nodes.isNodesInstance( obj )){
@@ -98,9 +135,6 @@ function Mixin( data, def ){
       }
     })
   }
-
-
-
 
   return mixinInstance
 }
