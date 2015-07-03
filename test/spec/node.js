@@ -188,9 +188,13 @@ describe("state event test", function(){
 
   it("state change should fire event", function(done){
     var miya = new User
+    var setFired = false
+    var settingFired = false
+    var changeFired = false
     async.parallel([
       function( cb ){
         miya.on("set", function( val, oldVal){
+          setFired = true
           assert.equal( val, 'set')
           assert.equal( oldVal, 'setting')
           cb()
@@ -198,13 +202,25 @@ describe("state event test", function(){
       },
       function( cb ){
         miya.on("setting", function( val, oldVal){
+          settingFired = true
           assert.equal( val, 'setting')
           assert.equal( oldVal, 'unset')
           cb()
         })
+      },
+      function( cb ){
+        miya.on('change', function(){
+          if( !changeFired){
+            changeFired = true
+            cb()
+          }
+        })
       }
-    ], function(){
-      done()
+    ], function(err){
+      assert.equal( setFired, true)
+      assert.equal( settingFired, true)
+      assert.equal( changeFired, true)
+      done(err)
     });
 
     miya.set("name","miya")

@@ -107,6 +107,31 @@ describe("events test", function(){
 
     user.push()
   })
+
+  it("sub object destroy should propagate", function(done){
+    var users = new UserNodes
+    var user = new User
+    var destroyFired = false
+    async.parallel([
+      function( cb ){
+        users.onAny("change", function( val, oldVal){
+          if( !destroyFired ){
+            destroyFired = true
+            cb()
+          }
+        })
+      },
+      function(cb){
+        users.insert(user)
+        cb()
+      }
+    ], function(err){
+      assert.equal( destroyFired, true)
+      done(err)
+    });
+
+    user.destroy('name','a')
+  })
 })
 
 describe("prototype test", function(){

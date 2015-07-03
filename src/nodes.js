@@ -333,6 +333,42 @@ classPrototype.offAny = function( event, handler ){
   })
 }
 
+//reactive data apis
+classPrototype.rxMap = function( handler, nodesClass ) {
+  var that = this
+  var data =  that.data.map(handler)
+
+  nodesClass = nodesClass || Nodes.createClass()
+
+  var newNodes = new nodesClass(data)
+
+
+  var updater = function( a, b){
+    var data =  that.data.map(handler)
+    newNodes.empty()
+    newNodes.fill(data)
+  }
+
+  //当前集合内任何更新都触发新集合更新
+  that.onAny('change', updater )
+  that.on('change', updater )
+
+  //处理销毁
+  that.on('destroyed', function(){
+    newNodes.destroy()
+    newNodes = null
+  })
+
+  //处理新集合的销毁
+  newNodes.on('destroyed', function(){
+    that.offAny('change', updater )
+    newNodes = null
+  })
+
+  return newNodes
+}
+
+
 //TODO 增加 reactive map/transform 等函数
 
 //this is important
