@@ -12,6 +12,7 @@ var NodeActionTense = {
   'commit': ['uncommitted','committing','committed'],
   'rollback': ['unrollbacked','rollbacking','rollbacked'],
   'replace': ['unreplaced','replacing','replaced'],
+  'fill': ['unfilled','filling','filled'],
   'destroy': ['undestroyed','destroying','destroyed']
 }
 
@@ -145,7 +146,7 @@ classPrototype.merge = function( path, value ){
   return this.data.merge(path, value)
 }
 
-classPrototype.fill =function( obj ){
+classPrototype.fill = classPrototype.replace =function( obj ){
   return this.data.fill( obj )
 }
 

@@ -159,8 +159,9 @@ classPrototype.clone = function( cloneData ){
 }
 
 classPrototype.insert = function( data, index ) {
+  data = data || {}
   index = index || this.data.length
-  if( util.isPlainObject(data) && this.factory ){
+  if( util.isPlainObject(data) ){
     data = new this.factory( data )
   }
   this.data = this.data.slice(0, index).concat( data, this.data.slice(index) )
@@ -238,6 +239,10 @@ classPrototype.rollback = function(name) {
       console.warn("node can not rollback")
     }
   })
+}
+
+classPrototype.destroy = function(){
+
 }
 
 
@@ -333,43 +338,65 @@ classPrototype.offAny = function( event, handler ){
   })
 }
 
-//reactive data apis
-classPrototype.rxMap = function( handler, nodesClass ) {
+
+//TODO 处理Node或者Nodes
+classPrototype.rxTransform = function( handler, nodeClass, ...associates ) {
   var that = this
-  var data =  that.data.map(handler)
-
-  nodesClass = nodesClass || Nodes.createClass()
-
-  var newNodes = new nodesClass(data)
+  var data =  util.transform( that.data, handler)
 
 
-  var updater = function( a, b){
-    var data =  that.data.map(handler)
-    newNodes.empty()
-    newNodes.fill(data)
+  var isNodes = !util.isPlainObject(data)
+  nodeClass = nodeClass || (isNodes ? Nodes.createClass() : Node.createClass() )
+  var newData = new nodeClass(data)
+
+  var updater = function(){
+    var data =  util.transform( that.data, handler)
+    if( isNodes ){
+      newData.empty()
+      newData.fill(data)
+    }else{
+      newData.replace(data)
+    }
   }
 
-  //当前集合内任何更新都触发新集合更新
-  that.onAny('change', updater )
-  that.on('change', updater )
+  //当关联集合内任何更新都触发新集合更新
+  Array.prototype.forEach.call([that, ...associates], function( nodeOrNodes ){
+    if( Nodes.isNodesInstance( nodeOrNodes )){
+      nodeOrNodes.onAny('change', updater )
+    }
 
-  //处理销毁
-  that.on('destroyed', function(){
-    newNodes.destroy()
-    newNodes = null
+    nodeOrNodes.on('change', updater )
+
+    //处理销毁
+    nodeOrNodes.on('destroyed', function(){
+      newData.destroy()
+      newData = null
+    })
   })
+
+
+
 
   //处理新集合的销毁
-  newNodes.on('destroyed', function(){
+  newData.on('destroyed', function(){
     that.offAny('change', updater )
-    newNodes = null
+    newData = null
   })
 
-  return newNodes
+  return newData
 }
 
 
-//TODO 增加 reactive map/transform 等函数
+//reactive data apis
+classPrototype.rxMap = function( handler, nodesClass,...associates ) {
+  //TODO 增加一个参数来关联更多的基础参数
+  return this.rxTransform(function( output, value, key){
+    output[key] = handler(value, key)
+  }, nodesClass, ...associates)
+}
+
+
+
 
 //this is important
 NodesActions.forEach(function( action ){
