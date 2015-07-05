@@ -113,6 +113,17 @@ var pick = require('lodash.pick')
 
 var  intersection = require('lodash.intersection')
 
+function union( ...sources ){
+  var output = []
+  sources.forEach(items=>{
+    items.forEach(item=>{
+      if( output.indexOf(item) === -1){
+        output.push( item )
+      }
+    })
+  })
+  return output
+}
 
 var extend = require('object-assign')
 

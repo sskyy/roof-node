@@ -1,258 +1,122 @@
+var Container = require("./container")
 var States = require("./states")
+var Node = require('./node')
 var util = require("./util")
-var Node = require("./node.js")
 
-//global values
-var NodesActionTense = {
-  'push':['unpushed','pushing','pushed'],
-  'pull':['unpulled','pulling','pulled'],
-  'verify':['unverified','verifying','verified'],
-
-  'set':['unset','setting','set'],
-  'commit':['uncommitted','committing','committed'],
-  'rollback':['unrollbacked','rollbacking','rollbacked'],
-
-  'fill' : ['unfilled','filling','filled'],
-  'insert' : ['uninserted','inserting','inserted'],
-  'update' : ['unupdated','updating','updated'],
-  'remove' : ['unremoved','removing','removed'],
-  'empty' : ['unempty','emptying','emptied']
+function isAction( obj ){
+  return  util.isArray(obj) && (typeof obj[0]=== 'function')
 }
 
-var NodesActions = Object.keys(NodesActionTense)
+function isApi( obj ) {
+  return typeof obj === 'function'
+}
+
+function isState( v ){
+  return util.isArray(v) && (v.length ===2 ||v.length ===3)
+}
+
 
 var Nodes = {
-  createClass:function( classDef, classOptions ){
+  /**
+   * 动态创建 class。要注意的是，action 的实现，需要constructor和prototype的同时支持
+   * @param classDef Object 用来存放三类信息:api，action, $factory
+   * @returns {Function}
+   */
+  createClass : function( classDef ){
     classDef = classDef || {}
-    classOptions = classOptions || {}
-    if(Node.isNodeClass(classDef)){
-      classDef = {
-        $factory : classDef
-      }
+    //为了兼容之前版本
+    if( Node.isNodeClass( classDef ) ){
+      classDef = { $factory : classDef }
     }
 
-    var apis = util.pick(classDef, function( v ){
-      return typeof v === 'function'
+    var apiKeys = []
+    var actionKeys = []
+    var states = {}
+
+    util.forEach(classDef, function(v,k){
+      if( isApi(v) ){
+        apiKeys.push( k )
+      }else if( isAction(v)){
+        actionKeys.push(k)
+      }else if( isState(v)){
+        states[k] = v
+      }
     })
 
-    //api与Node方法重名检测
-    var conflictedApis =  util.intersection( Object.keys(apis), Object.keys( classPrototype))
-    if(conflictedApis.length !==0){
-      throw new Error("Api conflict with Roof Node prototype methods:" + conflictedApis.join(","))
+    //api与Node 原生方法重名检测
+    var conflictedFns =  util.intersection( apiKeys.concat(actionKeys), Object.keys( classPrototype))
+    if(conflictedFns.length !==0){
+      throw new Error("Method conflict with Roof Node prototype methods:" + conflictedFns.join(","))
     }
 
-    //创建class
-    var newClass = function( data,options ){
-      options = util.extend({}, classOptions, options)
-      classConstructor.call( this, classDef, data, options, apis)
+    //动态创建class，创建实例时，可以直接复写 classDef
+    var Nodes = function( data ){
+      this.data = []
+      this.factory = classDef.$factory || Node.createClass()
+      this.nodeListeners = {}
+
+      //默认的action
+      var statesDef = util.mapValues( classActions, function( v ){
+        return v.slice(1)
+      })
+
+      //用户自己添加的action
+      actionKeys.forEach(function( name ){
+        statesDef[name] = classDef[name].slice(1)
+      })
+
+      //用户自己的states
+      util.extend( statesDef, states)
+
+      this.states = new States(statesDef)
+
+      if( data ){
+        data.forEach( item=>{
+          this.keep(item)
+        })
+      }
       this.isNodesInstance = true
-    }
 
-    newClass.prototype = util.extend({}, classPrototype,  apis)
-
-    if( classOptions.facade ){
-      util.forEach(classOptions.facade, function( fn, name ){
-        newClass[name] = fn.bind(newClass)
+      //length
+      Object.defineProperty(this, 'length',{
+        get: ()=>{
+          return this.data.length
+        }
       })
     }
 
-    //facade methods
-    newClass.insert = function(){
-      console.warn("you should use your own facade method")
-    }
-    newClass.update= function(){
-      console.warn("you should use your own facade method")
-    }
-    newClass.remove= function(){
-      console.warn("you should use your own facade method")
-    }
 
-    //TODO 这里的combine是动态combine，其实可以在创建时的options指定。
-    //newClass.combine = function( combine ){
-    //  newClass.options.combine = combine
-    //}
+    //新建一个prototype,把api 和 action 都放在上面
+    Nodes.prototype = util.extend(
+      util.clone(classPrototype),
+      util.zipObject(apiKeys, apiKeys.map(name=>classDef[name])))
 
-    newClass.isNodesClass = true
-    return newClass
+    actionKeys.forEach(name=>{
+      decorateWithAction( Nodes.prototype, name, classDef[name][0] )
+    })
+
+    Nodes.isNodesClass = true
+
+    return Nodes
   },
-  isNodesInstance :function ( obj ){
-    return obj && obj.isNodesInstance ===true
+  isNodesInstance:function( obj ){
+    return  obj && obj.isNodesInstance === true
   },
-  isNodesClass :function( func){
-    return func && func.isNodesClass ===true
+  isNodesClass:function( func ){
+    return func && func.isNodesClass === true
   }
-
 }
+
 
 /*
-  * class
+ Class prototype
  */
-
-function classConstructor( def, data, options, apis ){
-  var that = this
-  this.def = def
-  this.options = options ||{}
-  this.factory = def.$factory || Node.createClass()
-  this.updated = false
-  this.states = {}
-  this.data = []
-  this.nodeListeners = {}
-
-  that.states = new States({
-    tenses:NodesActionTense,
-    complex : {
-      "valid" : function(){
-
-      }.bind(that),
-      "invalid" : function(){
-
-      }.bind(that),
-      "clean" : function(){
-
-      }.bind(that),
-      "dirty" : function(){
-
-      }.bind(that)
-    }
-  })
-
-  if( that.options.combine ){
-    that.combine( that.options.combine )
-  }
-
-  //load middlewares
-  if( that.options.middleware ){
-    if( !util.isArray( that.options.middleware ) ){
-      that.options.middleware = [that.options.middleware]
-    }
-    that.middlewareActions = util.loadMiddlewareActions(that.options.middleware)
-  }
-
-  //length
-  Object.defineProperty(this, 'length',{
-    get: ()=>{
-      return this.data.length
-    }
-  })
-
-  if( data ){
-    this.fill( data )
-  }
-}
-
 var classPrototype = {}
 
-classPrototype.fill = function( collection ){
-  var that = this
-  collection.forEach(function( node ){
-    that.insert( node )
-  })
-  return this
-}
-
 classPrototype.clone = function( cloneData ){
-  var newNodes = new NodesInstance(this.def, this.options)
-  if( cloneData ){
-    newNodes.fill( this.data.map(function( node ){ return node.clone() }) )
-  }
-  return newNodes
+  var Nodes = this.constructor
+  return new Nodes( cloneData ? this.data.map(node =>node.clone() ) : [] )
 }
-
-classPrototype.insert = function( data, index ) {
-  data = data || {}
-  index = index || this.data.length
-  if( util.isPlainObject(data) ){
-    data = new this.factory( data )
-  }
-  this.data = this.data.slice(0, index).concat( data, this.data.slice(index) )
-
-  util.forEach(this.nodeListeners, function(  listeners, event){
-    listeners.forEach(function(listener){
-      data.on(event, listener)
-    })
-  })
-
-  // 监听子元素的 destroy
-  data.once('destroyed',()=>{
-    this.remove(data)
-  })
-}
-
-classPrototype.update = function( where, updateEJSON ) {
-  this.data.forEach(function( node ){
-    if( util.objectMatch( node.toObject, where) ){
-      node.set(updateEJSON)
-    }
-  })
-}
-
-classPrototype.remove= function(where) {
-  var that = this
-  this.data.forEach(function( node, index ){
-    // 增加直接 remove 某个引用的功能
-    var isMatch = ( where instanceof  that.factory ) ? ( node === where ) : util.objectMatch( node.toObject(), where )
-    if( isMatch ){
-      //remove listener first
-      util.forEach(that.nodeListeners, function( listeners, event ){
-        listeners.forEach(function(listener){
-          that.data[index].off(event, listener)
-        })
-      })
-
-      that.data[index] = false
-    }
-  })
-  that.data = util.compact( that.data )
-}
-
-classPrototype.empty = function(){
-  var that = this
-  this.data.forEach(function( node, index ){
-      //remove listener first
-    util.forEach(that.nodeListeners, function(listeners, event){
-      listeners.forEach(function(listener){
-        that.data[index].off(event, listener)
-      })
-    })
-
-    that.data[index] = false
-  })
-  that.data = []
-  return this
-}
-
-classPrototype.pull= function() {}
-classPrototype.push= function() {}
-classPrototype.verify= function() {}
-
-classPrototype.commit = function( name ) {
-  this.data.forEach(function( node){
-    node.commit( name )
-  })
-}
-
-classPrototype.rollback = function(name) {
-  this.data.forEach(function( node ){
-    try{
-      node.rollback( name )
-    }catch(e){
-      console.warn("node can not rollback")
-    }
-  })
-}
-
-classPrototype.destroy = function(){
-
-}
-
-
-classPrototype.find=classPrototype.filter =  function() {
-  var filteredNodes = this.data.filter.apply(this.data, arguments)
-  var newNodesInstance = this.clone( false )
-  newNodesInstance.fill( filteredNodes )
-  return newNodesInstance
-}
-
 
 classPrototype.is = function(){
   return this.states.is.apply(this.states, Array.prototype.slice.call(arguments))
@@ -272,6 +136,13 @@ classPrototype.isEvery = function(){
   })
 }
 
+classPrototype.find=classPrototype.filter =  function() {
+  var filteredNodes = this.data.filter.apply(this.data, arguments)
+  var newNodesInstance = this.clone( false )
+  newNodesInstance.fill( filteredNodes )
+  return newNodesInstance
+}
+
 classPrototype.findOne = function(where) {
   for( var i = 0; i < this.data.length; i++ ){
     if( util.objectMatch(this.data[i].toObject(), where) ){
@@ -279,6 +150,15 @@ classPrototype.findOne = function(where) {
     }
   }
   return null;
+}
+
+classPrototype.indexOf = function(where) {
+  for( var i = 0; i < this.data.length; i++ ){
+    if( util.objectMatch(this.data[i].toObject(), where) ){
+      return i
+    }
+  }
+  return -1;
 }
 
 classPrototype.get = function( index ){
@@ -338,73 +218,129 @@ classPrototype.offAny = function( event, handler ){
   })
 }
 
-
-//TODO 处理Node或者Nodes
-classPrototype.rxTransform = function( handler, nodeClass, ...associates ) {
+//兼容旧版本，只是语法糖
+classPrototype.fill = classPrototype.merge = function( collection ){
   var that = this
-  var data =  util.transform( that.data, handler)
+  collection.forEach(function( node ){
+    that.insert( node )
+  })
+  return this
+}
 
-
-  var isNodes = !util.isPlainObject(data)
-  nodeClass = nodeClass || (isNodes ? Nodes.createClass() : Node.createClass() )
-  var newData = new nodeClass(data)
-
-  var updater = function(){
-    var data =  util.transform( that.data, handler)
-    if( isNodes ){
-      newData.empty()
-      newData.fill(data)
-    }else{
-      newData.replace(data)
-    }
+//任何插入都必须经过 keep， 否则事件会出错
+classPrototype.keep = function( data, index){
+  data = data || {}
+  index = index || this.data.length
+  if( !Node.isNodeInstance(data) ){
+    data = new this.factory( data )
   }
+  this.data = this.data.slice(0, index).concat( data, this.data.slice(index) )
 
-  //当关联集合内任何更新都触发新集合更新
-  Array.prototype.forEach.call([that, ...associates], function( nodeOrNodes ){
-    if( Nodes.isNodesInstance( nodeOrNodes )){
-      nodeOrNodes.onAny('change', updater )
-    }
-
-    nodeOrNodes.on('change', updater )
-
-    //处理销毁
-    nodeOrNodes.on('destroyed', function(){
-      newData.destroy()
-      newData = null
+  util.forEach(this.nodeListeners, function(  listeners, event){
+    listeners.forEach(function(listener){
+      data.on(event, listener)
     })
   })
 
+  // 监听子元素的 destroy
+  data.once('destroyed',()=>{
+    this.dump(data)
+  })
+}
 
 
+//任何移除都必须经过 dump, 否则事件会出错
+classPrototype.dump= function( where ) {
+  var that = this
+  this.data.forEach(function (node, index) {
+    // 增加直接 remove 某个引用的功能
+    var isMatch = ( where instanceof  that.factory ) ? ( node === where ) : util.objectMatch(node.toObject(), where)
+    if (isMatch) {
+      //remove listener first
+      util.forEach(that.nodeListeners, function (listeners, event) {
+        listeners.forEach(function (listener) {
+          that.data[index].off(event, listener)
+        })
+      })
 
-  //处理新集合的销毁
-  newData.on('destroyed', function(){
-    that.offAny('change', updater )
-    newData = null
+      that.data[index] = false
+    }
+  })
+  that.data = util.compact(that.data)
+}
+
+////actions////////
+
+function decorateWithAction( obj, action, rawFn ){
+  obj[action] = function(){
+    var that = this
+    var argv = Array.prototype.slice.call(arguments)
+    that.states.start(action)
+    //don't user Promise.resolve to deal with none Promise result
+    //cause the callback invoke in next tick.
+    var res = rawFn.apply( that, argv )
+    if( res && res instanceof Promise){
+      return res.then(function(data){
+        that.states.end(action)
+        return data
+      }).catch(function(err){
+        that.states.end(action)
+        throw err
+      })
+    }else{
+      that.states.end(action)
+    }
+    return res
+  }
+}
+
+var classActions = {}
+classActions.insert = [function( data, index ) {
+  this.keep(data, index)
+}, 'uninserted', 'inserting', 'inserted']
+
+classActions.update = [function( where, updateEJSON ) {
+  this.data.forEach(function( node ){
+    if( util.objectMatch( node.toObject, where) ){
+      node.set(updateEJSON)
+    }
+  })
+}, 'unupdated', 'updating', 'updated']
+
+classActions.remove= [function(where) {
+  this.dump(where)
+}, 'unremoved', 'removing', 'removed']
+
+classActions.empty = [function(){
+  this.data.forEach(node=>{
+    this.dump( node )
+  })
+  return this
+},'unempty', 'emptying', 'empty']
+
+classActions.replace = [function( nodes){
+  this.data.forEach(node=>{
+    this.dump( node )
   })
 
-  return newData
-}
+  nodes.forEach( node =>{
+    this.keep(node)
+  })
+  return this
+}, 'unreplaced', 'replaceing', 'replaced']
 
+classActions.destroy = [function(){
+  this.data.forEach(node=>{
+    this.dump( node )
+  })
+  //TODO 更多内存清理
+  return this
+},'undestroyed', 'destroying', 'destroyed']
 
-//reactive data apis
-classPrototype.rxMap = function( handler, nodesClass,...associates ) {
-  //TODO 增加一个参数来关联更多的基础参数
-  return this.rxTransform(function( output, value, key){
-    output[key] = handler(value, key)
-  }, nodesClass, ...associates)
-}
-
-
-
-
-//this is important
-NodesActions.forEach(function( action ){
-  util.decorateWithMiddleware( classPrototype, action )
-  util.decorateWithState( classPrototype, action )
+//注意，这里会主动把所有action也绑到 classPrototype上
+util.forEach( classActions, function( actionDef, actionName ){
+  decorateWithAction( classPrototype, actionName, ...actionDef)
 })
 
+
 module.exports = Nodes
-
-
-

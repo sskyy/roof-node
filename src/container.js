@@ -1,15 +1,8 @@
 var util = require('./util')
 
-function Frames(options){
+function Container(){
   var that = this
-
-  this.options = util.defaults(options || {}, {
-    frameLimit : 5
-  })
   this.data = {}
-  this.historyNames = []
-  this.historyValues = []
-
 
   Object.defineProperty(this, "length", {
     get : function(){
@@ -18,7 +11,7 @@ function Frames(options){
   })
 }
 
-Frames.prototype.set = function( path , value ){
+Container.prototype.set = function( path , value ){
   var that = this
   if( util.isPlainObject(path) ){
     util.forEach( path, function( v, k ){
@@ -29,7 +22,7 @@ Frames.prototype.set = function( path , value ){
   }
 }
 
-Frames.prototype.merge = function( path, value ){
+Container.prototype.merge = function( path, value ){
   var that = this
   if( util.isPlainObject(path) ){
     util.forEach( path, function( v, k ){
@@ -40,50 +33,18 @@ Frames.prototype.merge = function( path, value ){
   }
 }
 
-Frames.prototype.fill = function( obj ){
+Container.prototype.fill = function( obj ){
   this.data = obj
 }
 
-Frames.prototype.get = function( path ){
+Container.prototype.get = function( path ){
   return getRef(this.data, path)
 }
 
 
-Frames.prototype.toObject = function(){
+Container.prototype.toObject = function(){
   return util.cloneDeep( this.data )
 }
-
-Frames.prototype.commit = function( commitName ){
-  commitName = commitName || this.historyNames.length
-
-  if( this.historyNames.indexOf( commitName) !== -1 ){
-    console.log(this.historyNames)
-    throw new Error("commit name already exists: " + commitName)
-  }
-
-  this.historyValues.push( util.cloneDeep(this.data) )
-  this.historyNames.push( commitName )
-  if( this.historyNames.length > this.options.frameLimit ){
-    this.historyNames.shift()
-    this.historyValues.shift()
-  }
-  return true
-}
-
-Frames.prototype.rollback = function( commitName ){
-  commitName = commitName || (this.historyNames.length -1)
-  var index = this.historyNames.indexOf( commitName)
-  if( index === -1 ){
-    throw new Error("cannot find commit with name: " + commitName)
-  }
-
-  var toRestore = this.historyValues.splice( index )[0]
-  this.historyNames.splice(index)
-
-  this.data = toRestore
-  return true
-}
-
 
 function getRef( obj, name ){
   var ns = name.split('.'),
@@ -131,4 +92,4 @@ function setRef( obj, name, data, merge ){
   }
 }
 
-module.exports = Frames
+module.exports = Container

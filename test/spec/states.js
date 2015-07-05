@@ -2,30 +2,25 @@ var States = require("../../src/states")
 var assert = require("assert")
 var async = require("async")
 
-var NodeActionTense = {
+var statesDef = {
   'push':['unpushed','pushing','pushed'],
   'pull':['unpulled','pulling','pulled'],
   'set':['unset','setting','set'],
   'verify':['unverified','verifying','verified'],
   'commit':['uncommitted','committing','committed'],
   'rollback':['unrollbacked','rollbacking','rollbacked'],
-  'replace' : ['unreplaced','replacing','replaced']
-}
-
-var NaiveStates = {
+  'replace' : ['unreplaced','replacing','replaced'],
   "valid" : ["valid","invalid"],
   "clean" : ["clean","dirty"]
 }
+
 
 
 describe("state test", function(){
   var states
 
   beforeEach(function(){
-    states = new States({
-      tenses : NodeActionTense,
-      naive : NaiveStates
-    })
+    states = new States(statesDef)
   })
 
   it("basic set test", function(){
@@ -60,13 +55,13 @@ describe("state test", function(){
     states.end("push")
     assert.equal( states.is("pushed"), true )
     assert.equal( states.is("pushing"), false )
-    
+
     assert.throws(
       function() {
         states.reset("fetch")
       },
       function(e) {
-        return e.message === "there is no state for action fetch"
+        return e.message === "there is no state fetch"
       }
     );
     
@@ -121,7 +116,6 @@ describe("state test", function(){
         states.on("change", function( val, oldVal){
           assert.equal( oldVal, "unpushed")
           assert.equal( val, 'pushing')
-          console.log("change")
           cb()
         })
       },
@@ -129,8 +123,6 @@ describe("state test", function(){
         states.on("pushing", function(val, oldVal){
           assert.equal( oldVal, "unpushed")
           assert.equal( val, 'pushing')
-          console.log("pushing")
-
           cb()
         })
       }
@@ -145,14 +137,14 @@ describe("state test", function(){
     async.parallel([
       function( cb ){
         states.on("change", function( val, oldVal){
-          assert.equal( oldVal, null)
+          assert.equal( oldVal, 'invalid')
           assert.equal( val, 'valid')
           cb()
         })
       },
       function( cb ){
         states.on("pushing", function(val, oldVal){
-          assert.equal( oldVal, null)
+          assert.equal( oldVal, 'invalid')
           assert.equal( val, 'valid')
           cb()
         })
