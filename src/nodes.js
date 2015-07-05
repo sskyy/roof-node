@@ -242,9 +242,9 @@ classPrototype.keep = function( data, index){
     })
   })
 
-  // 监听子元素的 destroy
+  // 监听子元素的 destroy,必须用 remove 这样移除完后才会有事件触发
   data.once('destroyed',()=>{
-    this.dump(data)
+    this.remove(data)
   })
 }
 
