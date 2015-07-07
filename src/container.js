@@ -1,14 +1,7 @@
 var util = require('./util')
 
 function Container(){
-  var that = this
   this.data = {}
-
-  Object.defineProperty(this, "length", {
-    get : function(){
-      return that.historyNames.length
-    }
-  })
 }
 
 Container.prototype.set = function( path , value ){

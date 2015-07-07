@@ -70,6 +70,14 @@ var Nodes = {
 
       this.states = new States(statesDef)
 
+      //Thank IE8's funny Object.defineProperty
+      //Object.defineProperty(this, 'length',{
+      //  get: ()=>{
+      //    return this.data.length
+      //  }
+      //})
+      this.length = 0
+
       if( data ){
         data.forEach( item=>{
           this.keep(item)
@@ -77,12 +85,7 @@ var Nodes = {
       }
       this.isNodesInstance = true
 
-      //length
-      Object.defineProperty(this, 'length',{
-        get: ()=>{
-          return this.data.length
-        }
-      })
+
     }
 
 
@@ -246,6 +249,9 @@ classPrototype.keep = function( data, index){
   data.once('destroyed',()=>{
     this.remove(data)
   })
+
+  //Thank IE8's funny Object.defineProperty
+  this.length++
 }
 
 
@@ -264,9 +270,12 @@ classPrototype.dump= function( where ) {
       })
 
       that.data[index] = false
+      //Thank IE8's funny Object.defineProperty
+      that.length--
     }
   })
   that.data = util.compact(that.data)
+
 }
 
 ////actions////////
