@@ -233,7 +233,7 @@ classPrototype.fill = classPrototype.merge = function( collection ){
 //任何插入都必须经过 keep， 否则事件会出错
 classPrototype.keep = function( data, index){
   data = data || {}
-  index = index || this.data.length
+  index = index=== undefined ? this.data.length : index
   if( !Node.isNodeInstance(data) ){
     data = new this.factory( data )
   }

@@ -104,3 +104,28 @@ describe("prototype test", function(){
     assert.equal( Nodes.isNodesClass(Users) ,true)
   })
 })
+
+
+describe('array like api test', function(){
+  it('insert can specify index', function(){
+    var users = new Users
+    var data = [{
+      name : 'lufy',
+      age : 16
+    },{
+      name : 'zoro',
+      age : 21
+    }]
+    data.forEach(function( item){
+      users.insert( item )
+    })
+
+    var nami = {name:'nami', age:22}
+    users.insert(nami, 0)
+    var newData = [nami].concat( data )
+    newData.forEach(function( user,i ){
+      assert.equal( user.name, users.get(i).get('name'))
+      assert.equal( user.age, users.get(i).get('age'))
+    })
+  })
+})
