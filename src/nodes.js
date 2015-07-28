@@ -51,6 +51,7 @@ var Nodes = {
 
     //动态创建class，创建实例时，可以直接复写 classDef
     var Nodes = function( data ){
+      this.def = classDef
       this.data = []
       this.factory = classDef.$factory || Node.createClass()
       this.nodeListeners = {}
@@ -85,7 +86,6 @@ var Nodes = {
       }
       this.isNodesInstance = true
 
-
     }
 
 
@@ -99,6 +99,7 @@ var Nodes = {
     })
 
     Nodes.isNodesClass = true
+    Nodes.def = classDef
 
     return Nodes
   },

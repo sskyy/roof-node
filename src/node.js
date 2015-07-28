@@ -44,6 +44,7 @@ var Node = {
 
     //动态创建class，创建实例时，可以直接复写 classDef
     var Node = function( data ){
+      this.def = classDef
       this.data = new Container()
 
       //默认的action
@@ -76,6 +77,7 @@ var Node = {
     })
 
     Node.isNodeClass = true
+    Node.def = classDef
 
     return Node
   },
