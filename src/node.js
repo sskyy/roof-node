@@ -108,6 +108,10 @@ classPrototype.off = function(){
   this.states.removeListener.apply( this.states, Array.prototype.slice.call(arguments) )
 }
 
+classPrototype.fire = function( event,...args ){
+  this.states.emit( event, ...args)
+}
+
 
 classPrototype.get = function(path){
   return this.data.get(path)
@@ -189,10 +193,13 @@ classActions.replace = [function( obj ){
 
 // 增加 destroy
 classActions.destroy = [function(){
+  console.log('destroying')
+
   // seal 所有操作的 api
   Object.keys(classActions).forEach((method)=>{
     this.lock( method, 'this node is destroyed')
   })
+  return this
 }, 'undestroyed', 'destroying', 'destroyed']
 
 //注意，这里会主动把所有action也绑到 classPrototype上

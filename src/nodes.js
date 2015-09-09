@@ -195,6 +195,10 @@ classPrototype.on = function( event, handler ){
   this.states.on( event, handler)
 }
 
+classPrototype.fire = function( event,...args ){
+  this.states.emit( event, ...args)
+}
+
 classPrototype.off = function( event, handler ){
   this.states.removeListener( event, handler)
 }
