@@ -1,4 +1,4 @@
-var States = require("../../src/states")
+var States = require("../../lib/states")
 var assert = require("assert")
 var async = require("async")
 

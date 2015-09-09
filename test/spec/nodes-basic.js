@@ -1,8 +1,8 @@
 
 var assert = require("assert")
 var _ = require("lodash")
-var Node = require("../../src/node")
-var Nodes = require("../../src/nodes")
+var Node = require("../../lib/node")
+var Nodes = require("../../lib/nodes")
 var async = require("async")
 
 
