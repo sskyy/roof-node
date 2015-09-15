@@ -1,7 +1,6 @@
 var assert = require("assert")
 var _ = require("lodash")
 var Node = require("../../src/node")
-var async = require("async")
 
 var User = Node.createClass( {})
 

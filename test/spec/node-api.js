@@ -1,7 +1,5 @@
 var assert = require("assert")
-var _ = require("lodash")
 var Node = require("../../src/node")
-var async = require("async")
 
 describe("class api test", function(){
   var User = Node.createClass({
