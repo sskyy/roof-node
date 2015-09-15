@@ -51,4 +51,14 @@ describe("nodes api test", function(){
     }
     assert.equal( error, true)
   })
+
+  it("find", function() {
+    var Todos = Nodes.createClass()
+    var todos = new Todos([{text:'foo'},{text:'bar'}])
+    var fooTodos = todos.filter(function(todo) {
+      console.log(todo.get('text') === 'foo');
+      return todo.get('text') === 'foo'
+    })
+    assert.equal(fooTodos.length, 1)
+  })
 })
