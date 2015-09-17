@@ -90,9 +90,9 @@ var Nodes = {
 
 
     //新建一个prototype,把api 和 action 都放在上面
-    Nodes.prototype = util.extend(
+    util.extend(Nodes.prototype, util.extend(
       util.clone(classPrototype),
-      util.zipObject(apiKeys, apiKeys.map(name=>classDef[name])))
+      util.zipObject(apiKeys, apiKeys.map(name=>classDef[name]))))
 
     actionKeys.forEach(name=>{
       decorateWithAction( Nodes.prototype, name, classDef[name][0] )
