@@ -18,21 +18,12 @@ describe("state event test", function(){
   it("state change should fire event", function(done){
     var miya = new User
     var setFired = false
-    var settingFired = false
     var changeFired = false
     async.parallel([
       function( cb ){
         miya.on("set", function( val, oldVal){
           setFired = true
           assert.equal( val, 'set')
-          assert.equal( oldVal, 'setting')
-          cb()
-        })
-      },
-      function( cb ){
-        miya.on("setting", function( val, oldVal){
-          settingFired = true
-          assert.equal( val, 'setting')
           assert.equal( oldVal, 'unset')
           cb()
         })
@@ -47,7 +38,6 @@ describe("state event test", function(){
       }
     ], function(err){
       assert.equal( setFired, true)
-      assert.equal( settingFired, true)
       assert.equal( changeFired, true)
       done(err)
     });
@@ -82,7 +72,7 @@ describe("state event test", function(){
   it("once should fire only once", function(){
     var jane = new User
     var fired = 0
-    jane.once("setting", function(){
+    jane.once("set", function(){
       fired ++
     })
     jane.set("name","jane")

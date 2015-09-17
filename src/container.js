@@ -69,7 +69,7 @@ function setRef( obj, name, data, merge ){
       if( util.isObject(ref[currentName]) && merge ){
         ref[currentName] = util.merge({},ref[currentName], data)
       }else{
-        if( ref[currentName] !== undefined ) console.warn("you are replacing a exist data", name)
+        //if( ref[currentName] !== undefined ) console.warn("you are replacing a exist data", name)
         ref[currentName] = data
       }
 

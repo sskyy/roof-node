@@ -45,6 +45,7 @@ describe("class api test", function(){
     })
 
     jane.destroy()
+    //nexttick 的时候才会变成true
     assert.equal( jane.is("destroyed"), true )
     jane.set("name","jane")
     assert.equal( jane.get("name"), undefined )

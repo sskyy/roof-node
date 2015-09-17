@@ -25,6 +25,7 @@ var Node = {
     var apiKeys = []
     var actionKeys = []
     var states = {}
+    var classActionKeys = Object.keys( classActions)
 
     util.forEach(classDef, function(v,k){
       if( isApi(v) ){
@@ -37,7 +38,7 @@ var Node = {
     })
 
     //api与Node 原生方法重名检测
-    var conflictedFns =  util.intersection( apiKeys.concat(actionKeys), Object.keys( classPrototype))
+    var conflictedFns =  util.intersection( apiKeys.concat(actionKeys), Object.keys( classPrototype).concat(classActions))
     if(conflictedFns.length !==0){
       throw new Error("Method conflict with Roof Node prototype methods:" + conflictedFns.join(","))
     }
@@ -68,12 +69,27 @@ var Node = {
 
 
     //新建一个prototype,把api 和 action 都放在上面
-    Node.prototype = util.extend(
+    util.extend(
+      Node.prototype,
       util.clone(classPrototype),
       util.zipObject(apiKeys, apiKeys.map(name=>classDef[name])))
 
+    //默认的action
+    classActionKeys.forEach(name=>{
+      if( classActions[name].length === 4 ){
+        decorateWithAction( Node.prototype, name, classActions[name][0] )
+      }else{
+        decorateWithNaiveAction( Node.prototype, name, classActions[name][0] )
+      }
+    })
+
+    //用户自己的action
     actionKeys.forEach(name=>{
-      decorateWithAction( Node.prototype, name, classDef[name][0] )
+      if( classDef[name].length === 4 ){
+        decorateWithAction( Node.prototype, name, classDef[name][0] )
+      }else{
+        decorateWithNaiveAction( Node.prototype, name, classDef[name][0] )
+      }
     })
 
     Node.isNodeClass = true
@@ -155,6 +171,16 @@ classPrototype.action = function( action, rawFn,  ...states){
   decorateWithAction( this, action, rawFn, ...states)
 }
 
+
+////states/////////
+classPrototype.activate = function( stateName){
+  this.states.activate(stateName)
+}
+
+classPrototype.deactivate = function( stateName){
+  this.states.deactivate(stateName)
+}
+
 ////actions////////
 
 function decorateWithAction( obj, action, rawFn ){
@@ -180,32 +206,38 @@ function decorateWithAction( obj, action, rawFn ){
   }
 }
 
+function decorateWithNaiveAction( obj, action, rawFn ){
+  obj[action] = function(){
+    var that = this
+    var argv = Array.prototype.slice.call(arguments)
+    var res = rawFn.apply( that, argv )
+    that.states.activate(action)
+    return res
+  }
+}
+
 var classActions = {}
 classActions.set = [function( path, value ){
   return this.data.set(path, value)
-}, 'unset', 'setting','set']
+}, 'set', 'unset']
 
 
 classActions.replace = [function( obj ){
   return this.data.fill( obj )
-}, 'unreplaced' , 'replacing', 'replaced']
+}, 'replaced' ,  'unreplaced']
 
 
 // 增加 destroy
 classActions.destroy = [function(){
-  console.log('destroying')
 
   // seal 所有操作的 api
   Object.keys(classActions).forEach((method)=>{
     this.lock( method, 'this node is destroyed')
   })
   return this
-}, 'undestroyed', 'destroying', 'destroyed']
+}, 'destroyed', 'undestroyed']
 
-//注意，这里会主动把所有action也绑到 classPrototype上
-util.forEach( classActions, function( actionDef, actionName ){
-  decorateWithAction( classPrototype, actionName, ...actionDef)
-})
+
 
 
 module.exports = Node

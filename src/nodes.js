@@ -23,8 +23,10 @@ var Nodes = {
    * @returns {Function}
    */
   createClass : function( classDef ){
-    classDef = util.cloneDeep(classDef || {})
+    //不能用cloneDeep，会导致 Node class 丢失
+    //classDef = util.cloneDeep(classDef || {})
     //为了兼容之前版本
+    classDef = classDef || {}
     if( Node.isNodeClass( classDef ) ){
       classDef = { $factory : classDef }
     }
@@ -54,6 +56,7 @@ var Nodes = {
       this.def = util.cloneDeep(classDef)
       this.data = []
       this.factory = classDef.$factory || Node.createClass()
+
       this.nodeListeners = {}
 
       //默认的action
