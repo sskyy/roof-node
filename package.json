@@ -1,6 +1,6 @@
 {
   "name": "roof-node",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "scripts": {
     "test": "mocha --require ./test/init.js --compilers js:babel/register  ./test/spec/*",
     "testone": "mocha --require ./test/init.js --compilers js:babel/register",
@@ -26,8 +26,5 @@
     "webpack": "~1.8.10",
     "webpack-dev-server": "~1.8.2",
     "pre-commit": "~1.0.7"
-  },
-  "pre-commit": [
-    "compile"
-  ]
+  }
 }
