@@ -1,7 +1,7 @@
 var assert = require("assert")
 var _ = require("lodash")
-var Node = require("../../src/node")
-var Nodes = require("../../src/nodes")
+var Node = require("../../lib/node")
+var Nodes = require("../../lib/nodes")
 var async = require("async")
 
 
@@ -50,15 +50,5 @@ describe("nodes api test", function(){
       error = true
     }
     assert.equal( error, true)
-  })
-
-  it("find", function() {
-    var Todos = Nodes.createClass()
-    var todos = new Todos([{text:'foo'},{text:'bar'}])
-    var fooTodos = todos.filter(function(todo) {
-      console.log(todo.get('text') === 'foo');
-      return todo.get('text') === 'foo'
-    })
-    assert.equal(fooTodos.length, 1)
   })
 })

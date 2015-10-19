@@ -1,5 +1,7 @@
 var assert = require("assert")
-var Node = require("../../src/node")
+var _ = require("lodash")
+var Node = require("../../lib/node")
+var async = require("async")
 
 describe("class api test", function(){
   var User = Node.createClass({
@@ -45,7 +47,6 @@ describe("class api test", function(){
     })
 
     jane.destroy()
-    //nexttick 的时候才会变成true
     assert.equal( jane.is("destroyed"), true )
     jane.set("name","jane")
     assert.equal( jane.get("name"), undefined )

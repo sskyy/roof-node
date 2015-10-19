@@ -1,7 +1,7 @@
 var assert = require("assert")
 var _ = require("lodash")
-var Node = require("../../src/node")
-var Nodes = require("../../src/nodes")
+var Node = require("../../lib/node")
+var Nodes = require("../../lib/nodes")
 var async = require("async")
 
 var pushAction = [function(){
@@ -100,4 +100,23 @@ describe("events test", function(){
 
     user.destroy()
   })
+
+  it("collection on method should not listen on child", function(done){
+    var users = new Users
+    var changeFired = 0
+
+    users.on('change', function(){
+      changeFired ++
+    })
+
+    users.insert({name :'ke$ha'})
+    users.get(0).set('nane','fill')
+
+    setTimeout(function(){
+      assert.equal( changeFired, 1 )
+      done()
+    },10)
+
+  })
 })
+
