@@ -61,7 +61,7 @@ describe("state test", function(){
         states.reset("fetch")
       },
       function(e) {
-        return e.message === "there is no state fetch"
+        return e.message === "There is no state for action: fetch"
       }
     );
     

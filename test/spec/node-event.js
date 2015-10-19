@@ -21,7 +21,7 @@ describe("state event test", function(){
     var changeFired = false
     async.parallel([
       function( cb ){
-        miya.on("set", function( val, oldVal){
+        miya.on("set", function ( val, oldVal){
           setFired = true
           assert.equal( val, 'set')
           assert.equal( oldVal, 'unset')
@@ -29,9 +29,13 @@ describe("state event test", function(){
         })
       },
       function( cb ){
-        miya.on('change', function(){
+        miya.on('change', function (val, oldVal, detail){
           if( !changeFired){
             changeFired = true
+            assert.equal( val, 'set')
+            assert.equal( oldVal, 'unset')
+            assert.equal( detail.type, 'naive')
+            assert.equal( detail.state, 'active')
             cb()
           }
         })
@@ -47,6 +51,7 @@ describe("state event test", function(){
 
   it("action change should fire event", function(done){
     var miya = new User
+    var changeFired = 0
     async.parallel([
       function( cb ){
         miya.on("pushing", function( val, oldVal){
@@ -61,8 +66,27 @@ describe("state event test", function(){
           assert.equal( oldVal, 'pushing')
           cb()
         })
+      },
+      function( cb ){
+        miya.on("change", function shouldFireTwice( val, oldVal, detail){
+          if( changeFired == 0 ){
+            assert.equal( val, 'pushing')
+            assert.equal( oldVal, 'unpushed')
+            assert.equal( detail.type, 'action')
+            assert.equal( detail.state, 'processing')
+            changeFired ++
+          }else if( changeFired ==1 ){
+            assert.equal( val, 'pushed')
+            assert.equal( oldVal, 'pushing')
+            assert.equal( detail.type, 'action')
+            assert.equal( detail.state, 'end')
+            changeFired ++
+            cb()
+          }
+        })
       }
     ], function(){
+      assert.equal( changeFired, 2)
       done()
     });
 
